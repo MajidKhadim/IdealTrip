@@ -1,0 +1,19 @@
+{
+  "Version": 1,
+  "Hash": "/bdOGRCCEUOrm1OnqW56rhVba667rEzouZHSPvSUw5M=",
+  "Source": "IdealTrip",
+  "BasePath": "_content/IdealTrip",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "IdealTrip\\wwwroot",
+      "Source": "IdealTrip",
+      "ContentRoot": "C:\\Users\\PMLS\\Desktop\\FYP\\IdealTrip\\IdealTrip\\wwwroot\\",
+      "BasePath": "_content/IdealTrip",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": []
+}
