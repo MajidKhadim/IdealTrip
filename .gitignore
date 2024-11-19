@@ -1,0 +1,21 @@
+﻿# Ignore environment files
+.env
+
+# Ignore build and output files
+bin/
+obj/
+
+# Ignore user-specific files
+*.user
+*.swp
+*.suo
+*.tmp
+*.bak
+*.log
+*.db
+
+# Ignore IDE and OS-specific files
+.vs/
+.idea/
+Thumbs.db
+.DS_Store
