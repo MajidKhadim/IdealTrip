@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "/bdOGRCCEUOrm1OnqW56rhVba667rEzouZHSPvSUw5M=",
+  "Hash": "IrxN4XLKcxvg1+RuB9Kwjbqq5r7bx+ENO2xoWH5cW5Y=",
   "Source": "IdealTrip",
   "BasePath": "_content/IdealTrip",
   "Mode": "Default",
@@ -15,5 +15,25 @@
       "Pattern": "**"
     }
   ],
-  "Assets": []
+  "Assets": [
+    {
+      "Identity": "C:\\Users\\PMLS\\Desktop\\FYP\\IdealTrip\\IdealTrip\\wwwroot\\profilephotos\\20bf1c06-082d-4668-47aa-08dd08820e18\\a25fb53e-686a-45f5-915b-ee2113527b49_pexels-arshad-sutar-1749303.jpg",
+      "SourceId": "IdealTrip",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\PMLS\\Desktop\\FYP\\IdealTrip\\IdealTrip\\wwwroot\\",
+      "BasePath": "_content/IdealTrip",
+      "RelativePath": "profilephotos/20bf1c06-082d-4668-47aa-08dd08820e18/a25fb53e-686a-45f5-915b-ee2113527b49_pexels-arshad-sutar-1749303.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\profilephotos\\20bf1c06-082d-4668-47aa-08dd08820e18\\a25fb53e-686a-45f5-915b-ee2113527b49_pexels-arshad-sutar-1749303.jpg"
+    }
+  ]
 }

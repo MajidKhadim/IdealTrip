@@ -3,6 +3,7 @@ using IdealTrip.Models;
 using IdealTrip.Models.Enums;
 using IdealTrip.Models.Login;
 using IdealTrip.Models.Register;
+using IdealTrip.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,13 +17,15 @@ namespace IdealTrip.Controllers
 		private readonly SignInManager<ApplicationUser> _signInManager;
 		private readonly JwtHelper _jwtHelper;
 		private readonly ApplicationDbContext _context;
+		private readonly EmailService _emailService;
 
-		public UserAccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, JwtHelper jwtHelper, ApplicationDbContext context)
+		public UserAccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, JwtHelper jwtHelper, ApplicationDbContext context, EmailService emailService)
 		{
 			_userManager = userManager;
 			_signInManager = signInManager;
 			_jwtHelper = jwtHelper;
 			_context = context;
+			_emailService = emailService;
 		}
 		#region Registration
 
@@ -90,11 +93,17 @@ namespace IdealTrip.Controllers
 
 			// Email Confirmation Logic
 			var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-			var confirmationLink = Url.Action("ConfirmEmail", "UserAccount",
-				new { userId = user.Id, token }, Request.Scheme);
+			var confirmationLink = Url.Action("ConfirmEmail", "UserAccount", new { userId = user.Id, token }, Request.Scheme);
 
-			// Send Email with confirmationLink (use an email service)
-			// await _emailService.SendEmailAsync(user.Email, "Confirm Email", confirmationLink);
+			// Send Confirmation Email via SendGrid
+			var subject = "Email Confirmation";
+			var message = $"Your Email is being registered in Ideal Trip and you are going to be a user as {role}!!!" +
+				$"Please confirm your email by clicking the link: <a href='{confirmationLink}'>Confirm Email</a>" +
+				$"Regards : Ideal Trip(Make your Journey with Pleasure)";
+			var emailSent = await _emailService.SendEmailAsync(user.Email, subject, message);
+
+			if (!emailSent)
+				return BadRequest("Failed to send confirmation email.");
 
 			return Ok("Registration successful. Please check your email to confirm your account.");
 		}
@@ -156,12 +165,17 @@ namespace IdealTrip.Controllers
 
 			// Email Confirmation Logic
 			var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-			var confirmationLink = Url.Action("ConfirmEmail", "UserAccount",
-				new { userId = user.Id, token }, Request.Scheme);
+			var confirmationLink = Url.Action("ConfirmEmail", "UserAccount", new { userId = user.Id, token }, Request.Scheme);
 
-			// Send Email with confirmationLink (use an email service)
-			// await _emailService.SendEmailAsync(user.Email, "Confirm Email", confirmationLink);
+			// Send Confirmation Email via SendGrid
+			var subject = "Email Confirmation";
+			var message = $"Your Email is being registered in Ideal Trip and you are going to be a user as {role}!!!" +
+				$"Please confirm your email by clicking the link: <a href='{confirmationLink}'>Confirm Email</a>" +
+				$"Regards : Ideal Trip(Make your Journey with Pleasure)";
+			var emailSent = await _emailService.SendEmailAsync(user.Email, subject, message);
 
+			if (!emailSent)
+				return BadRequest("Failed to send confirmation email.");
 			return Ok("Registration successful. Please check your email to confirm your account.");
 		}
 
@@ -207,7 +221,7 @@ namespace IdealTrip.Controllers
 			return Ok(new { Token = token });
 		}
 
-
+		
 		#endregion
 
 		[HttpPost("update-user/{userId}")]

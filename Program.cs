@@ -1,18 +1,22 @@
 using IdealTrip.Helpers;
 using IdealTrip.Models;
+using IdealTrip.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Text;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
 
+DotNetEnv.Env.Load();
 // JWT Configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 builder.Services.AddSingleton<JwtHelper>();
+builder.Services.AddSingleton<EmailService>();
 
 builder.Services.AddAuthentication(options =>
 {
@@ -35,6 +39,7 @@ builder.Services.AddAuthentication(options =>
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Configuration.AddEnvironmentVariables();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
