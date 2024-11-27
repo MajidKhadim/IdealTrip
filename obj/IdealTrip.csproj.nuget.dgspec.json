@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\PMLS\\Desktop\\FYP\\IdealTrip\\IdealTrip\\IdealTrip.csproj": {}
+    "C:\\Users\\PMLS\\Desktop\\FYP\\IdealTrip-Backend\\IdealTrip\\IdealTrip.csproj": {}
   },
   "projects": {
-    "C:\\Users\\PMLS\\Desktop\\FYP\\IdealTrip\\IdealTrip\\IdealTrip.csproj": {
+    "C:\\Users\\PMLS\\Desktop\\FYP\\IdealTrip-Backend\\IdealTrip\\IdealTrip.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\PMLS\\Desktop\\FYP\\IdealTrip\\IdealTrip\\IdealTrip.csproj",
+        "projectUniqueName": "C:\\Users\\PMLS\\Desktop\\FYP\\IdealTrip-Backend\\IdealTrip\\IdealTrip.csproj",
         "projectName": "IdealTrip",
-        "projectPath": "C:\\Users\\PMLS\\Desktop\\FYP\\IdealTrip\\IdealTrip\\IdealTrip.csproj",
+        "projectPath": "C:\\Users\\PMLS\\Desktop\\FYP\\IdealTrip-Backend\\IdealTrip\\IdealTrip.csproj",
         "packagesPath": "C:\\Users\\PMLS\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\PMLS\\Desktop\\FYP\\IdealTrip\\IdealTrip\\obj\\",
+        "outputPath": "C:\\Users\\PMLS\\Desktop\\FYP\\IdealTrip-Backend\\IdealTrip\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\PMLS\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -75,6 +75,14 @@
             "Microsoft.EntityFrameworkCore.tools": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "Microsoft.Extensions.Logging": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "Microsoft.Extensions.Logging.Console": {
               "target": "Package",
               "version": "[9.0.0, )"
             },

@@ -37,20 +37,29 @@ builder.Services.AddAuthentication(options =>
 	};
 });
 // Add services to the container.
-
 builder.Services.AddControllers();
+builder.Logging.AddConsole();
 builder.Configuration.AddEnvironmentVariables();
+builder.Services.AddCors(options => options.AddPolicy("AllowAnyOrigin",
+	builder => builder.AllowAnyOrigin()
+	.AllowAnyHeader()
+	.AllowAnyMethod()));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-	options.UseSqlServer(builder.Configuration.GetConnectionString("IdealTripDbConnection"));
+	options.UseSqlServer(builder.Configuration["ENV_IDEALTRIPDBCONNECTION"]);
 });
 
-builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>()
-	.AddEntityFrameworkStores<ApplicationDbContext>()
-	.AddDefaultTokenProviders();
+builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
+{
+	options.User.RequireUniqueEmail = true; // Email remains unique
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders()
+.AddUserValidator<NonUniqueUserNameValidator>();
+
 
 var app = builder.Build();
 
@@ -62,6 +71,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowAnyOrigin");
 
 app.UseAuthorization();
 

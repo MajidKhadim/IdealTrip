@@ -110,7 +110,7 @@ namespace IdealTrip.Controllers
 		}
 
 
-		[HttpGet]
+		[HttpGet("get-users")]
 		public async Task<ActionResult<List<AllUsersAdminViewDto>>> GetAllUsers()
 		{
 			var model = await _userManager.Users.Select(user 
@@ -125,7 +125,7 @@ namespace IdealTrip.Controllers
 			return Ok(model);
 		}
 
-		[HttpPost]
+		[HttpPost("delete-user")]
 		public async Task<ActionResult> DeleteUser(Guid guid)
 		{
 			var user = await _userManager.FindByIdAsync(guid.ToString());

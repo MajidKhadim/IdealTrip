@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
+using System.Reflection.Emit;
 namespace IdealTrip.Models
 {
 	public class ApplicationDbContext : IdentityDbContext<ApplicationUser,IdentityRole<Guid>,Guid>
@@ -20,6 +21,22 @@ namespace IdealTrip.Models
 				.WithMany()
 				.HasForeignKey(p => p.UserId)
 				.OnDelete(DeleteBehavior.Cascade);
+			builder.Entity<ApplicationUser>()
+				.HasIndex(u => u.Email)
+				.IsUnique();
+			builder.Entity<ApplicationUser>()
+				.HasIndex(u => u.UserName)
+				.IsUnique(false);
+			builder.Entity<ApplicationUser>()
+				.HasIndex(u => u.FullName)
+				.IsUnique(false);
+			builder.Entity<ApplicationUser>()
+				.HasIndex(u => u.NormalizedUserName)
+				.IsUnique(false);
+			// Ensure Email is unique
+			builder.Entity<ApplicationUser>()
+				.HasIndex(u => u.Email)
+				.IsUnique(true);
 		}
 	}
 }
