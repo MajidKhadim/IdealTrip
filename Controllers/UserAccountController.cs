@@ -6,6 +6,7 @@ using IdealTrip.Models.Register;
 using IdealTrip.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Data;
 
 namespace IdealTrip.Controllers
 {
@@ -19,6 +20,7 @@ namespace IdealTrip.Controllers
 		private readonly EmailService _emailService;
 		private readonly IConfiguration _config;
 		private readonly ILogger<UserAccountController> _logger;
+		private string role;
 
 		public UserAccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, JwtHelper jwtHelper, ApplicationDbContext context, EmailService emailService, IConfiguration config,ILogger<UserAccountController> logger)
 		{
@@ -34,34 +36,167 @@ namespace IdealTrip.Controllers
 		#region Registration
 
 		[HttpPost("register/tourist")]
-		public async Task<IActionResult> RegisterTourist([FromBody] RegisterTouristDto model)
+		public async Task<IActionResult> RegisterTourist([FromForm] RegisterTouristDto model)
 		{
 			_logger.LogInformation("Recived Data : {Data}", System.Text.Json.JsonSerializer.Serialize(model));
 			return await RegisterUser(model, "Tourist");
 		}
 
-		[HttpPost("register/localhomeowner")]
-		public async Task<IActionResult> RegisterLocalHomeOwner([FromForm] RegisterLocalHomeOwnerDto model)
-		{
-			return await RegisterUserWithProof(model, "LocalHomeOwner");
-		}
+		//[HttpPost("register/localhomeowner")]
+		//public async Task<IActionResult> RegisterLocalHomeOwner([FromForm] RegisterLocalHomeOwnerDto model)
+		//{
+		//	return await RegisterUserWithProof(model, "LocalHomeOwner");
+		//}
 
-		[HttpPost("register/hotelowner")]
-		public async Task<IActionResult> RegisterHotelOwner([FromForm] RegisterHotelOwnerDto model)
-		{
-			return await RegisterUserWithProof(model, "HotelOwner");
-		}
+		//[HttpPost("register/hotelowner")]
+		//public async Task<IActionResult> RegisterHotelOwner([FromForm] RegisterHotelOwnerDto model)
+		//{
+		//	return await RegisterUserWithProof(model, "HotelOwner");
+		//}
 
-		[HttpPost("register/tourguide")]
-		public async Task<IActionResult> RegisterTourGuide([FromForm] RegisterTourGuideDto model)
-		{
-			return await RegisterUserWithProof(model, "TourGuide");
-		}
+		//[HttpPost("register/tourguide")]
+		//public async Task<IActionResult> RegisterTourGuide([FromForm] RegisterTourGuideDto model)
+		//{
+		//	return await RegisterUserWithProof(model, "TourGuide");
+		//}
 		[HttpPost("register/transporter")]
-		public async Task<IActionResult> RegisterTransporter([FromForm] RegisterTourGuideDto model)
+		public async Task<IActionResult> RegisterTransportProvider([FromForm] RegisterTransportProviderDto model)
 		{
-			return await RegisterUserWithProof(model, "Transporter");
+			try
+			{
+				this.role = "Transporter";
+				// Validate the model
+				if (!ModelState.IsValid)
+				{
+					_logger.LogError("Invalid model state: {@ModelState}", ModelState);
+					return BadRequest(ModelState);
+				}
+
+				// Check if the email already exists
+				var existingUser = await _userManager.FindByEmailAsync(model.Email);
+				if (existingUser != null)
+				{
+					_logger.LogWarning("Email already associated with an account: {Email}", model.Email);
+					return BadRequest(new { Message = "This email is already associated with an account." });
+				}
+
+				// Verify that Password and ConfirmPassword match
+				if (model.Password != model.ConfirmPassword)
+				{
+					_logger.LogWarning("Password and ConfirmPassword do not match for email: {Email}", model.Email);
+					return BadRequest(new { Message = "Password and ConfirmPassword should be the same." });
+				}
+
+				// Create the user
+				var user = new ApplicationUser
+				{
+					UserName = model.FullName,
+					Email = model.Email,
+					FullName = model.FullName,
+					Role = this.role,
+					PhoneNumber = model.PhoneNumber,
+					Address = model.Address,
+					Status = ProofStatus.Pending
+				};
+
+				var result = await _userManager.CreateAsync(user, model.Password);
+				if (!result.Succeeded)
+				{
+					_logger.LogError("Failed to create user: {@Errors}", result.Errors);
+					return BadRequest(result.Errors);
+				}
+
+				// Save Vehicle Registration Form
+				if (model.VehicleRegistrationForm != null)
+				{
+					try
+					{
+						var vehicleRegPath = await SaveFile(model.VehicleRegistrationForm, "proofs", user.Id.ToString());
+						_context.Proofs.Add(new Proof
+						{
+							UserId = user.Id,
+							DocumentType = "Vehicle Registration",
+							DocumentPath = vehicleRegPath
+						});
+					}
+					catch (InvalidOperationException ex)
+					{
+						_logger.LogWarning(ex, "File validation failed.");
+						return BadRequest(new { Message = ex.Message });
+					}
+				}
+
+				// Save Driver License
+				if (model.DriverLicense != null)
+				{
+					try
+					{
+						var driverLicense = await SaveFile(model.DriverLicense, "proofs", user.Id.ToString());
+						_context.Proofs.Add(new Proof
+						{
+							UserId = user.Id,
+							DocumentType = "Vehicle Registration",
+							DocumentPath = driverLicense
+						});
+					}
+					catch (InvalidOperationException ex)
+					{
+						_logger.LogWarning(ex, "File validation failed.");
+						return BadRequest(new { Message = ex.Message });
+					}
+				}
+				if (model.ProfilePhoto != null)
+				{
+					var profilePhotoPath = await SaveFile(model.ProfilePhoto, "profilephotos", user.Id.ToString());
+					user.ProfilePhotoPath = profilePhotoPath; // Save relative path to database
+
+					var updateResult = await _userManager.UpdateAsync(user);
+					if (!updateResult.Succeeded)
+					{
+						return BadRequest(new { Messege = "Failed to save profile photo path." });
+					}
+				}
+
+				// Save the changes in the database
+				await _context.SaveChangesAsync();
+
+				_logger.LogInformation("Transport provider registered successfully: {Email}", model.Email);
+				var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+
+				// Generate Confirmation Link
+				var baseUrl = _config["BASE_URL"];
+				var confirmationLink = $"{baseUrl}/api/auth/confirm-email?userId={user.Id}&token={token}";
+
+				// Email Subject
+				var subject = "Welcome to Ideal Trip - Confirm Your Email";
+
+				// Email Content
+				var headerText = "Email Confirmation Required";
+				var bodyContent = $@"
+    <b><p>Hello {user.FullName},</p></b>
+    <p>Welcome to <b>Ideal Trip</b>! We are thrilled to have you as a {role} on our platform.</p>
+    <p>To get started, please confirm your email address by clicking the button below:</p>";
+				var buttonText = "Confirm Email";
+				var buttonLink = confirmationLink;
+
+				// Generate Email Body Using Template
+				var emailBody = EmailTemplateHelper.GenerateEmailTemplate(headerText, bodyContent, buttonText, buttonLink);
+				// Send Email
+				var emailSent = await _emailService.SendEmailAsync(user.Email, subject, emailBody);
+
+				if (!emailSent)
+					return BadRequest(new { Messege = "Failed to send Confirmation Email." });
+
+				return Ok(new { Messege = "Registration successful! A confirmation email has been sent to your email address. Please check your inbox to confirm your account." });
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "An error occurred while registering the transport provider.");
+				return StatusCode(500, new { Message = "Unable to perform the task now. Please try again later." });
+			}
 		}
+
+
 		private async Task<IActionResult> RegisterUser(RegisterDtoBase model, string role)
 		{
 			try
@@ -84,6 +219,7 @@ namespace IdealTrip.Controllers
 					FullName = model.FullName,
 					Role = role,
 					PhoneNumber = model.PhoneNumber,
+					Address = model.Address,
 					Status = role == "Tourist" ? ProofStatus.Verified : ProofStatus.Pending
 				};
 
@@ -103,10 +239,6 @@ namespace IdealTrip.Controllers
 					{
 						return BadRequest(new { Messege = "Failed to save profile photo path." });
 					}
-				}
-				else
-				{
-					user.ProfilePhotoPath = null;
 				}
 
 				// Email Confirmation Logic
@@ -149,110 +281,6 @@ namespace IdealTrip.Controllers
 			}
 		}
 
-
-		private async Task<IActionResult> RegisterUserWithProof(RegisterWithProofDto model, string role)
-		{
-			try { 
-			if (!ModelState.IsValid)
-				return BadRequest(ModelState);
-			var existingUser = await _userManager.FindByEmailAsync(model.Email);
-			if (existingUser != null)
-			{
-				return BadRequest(new { Message = "This email is already associated with an account." });
-			}
-			// Create a new user
-			var user = new ApplicationUser
-			{
-				UserName = model.FullName,
-				Email = model.Email,
-				FullName = model.FullName,
-				PhoneNumber = model.PhoneNumber,
-				Role = role
-			};
-
-			// Save user to the database
-			var result = await _userManager.CreateAsync(user, model.Password);
-			if (!result.Succeeded)
-				return BadRequest(result.Errors);
-
-			// Handle Profile Photo Upload (from base class)
-			if (model.ProfilePhoto != null)
-			{
-				var profilePhotoPath = await SaveFile(model.ProfilePhoto, "profilephotos", user.Id.ToString());
-				user.ProfilePhotoPath = profilePhotoPath; // Save relative path to database
-
-				var updateResult = await _userManager.UpdateAsync(user);
-				if (!updateResult.Succeeded)
-				{
-					return BadRequest("Failed to save profile photo path.");
-				}
-			}
-			else
-			{
-				user.ProfilePhotoPath = null;
-			}
-
-			// Handle Proof Documents Upload (specific to RegisterWithProofDto)
-			if (model.ProofDocuments != null && model.ProofDocuments.Any())
-			{
-				foreach (var proofDocument in model.ProofDocuments)
-				{
-					var proofPath = await SaveFile(proofDocument, "proofs", user.Id.ToString());
-
-					// Save proof details to the database
-					var proof = new Proof
-					{
-						UserId = user.Id,
-						DocumentType = model.DocumentType, // Optional
-						DocumentPath = proofPath // Relative path
-					};
-
-					_context.Proofs.Add(proof);
-				}
-
-				await _context.SaveChangesAsync();
-			}
-
-			// Email Confirmation Logic
-			// Generate Email Confirmation Token
-			var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-
-			// Generate Confirmation Link
-			var baseUrl = _config["BASE_URL"];
-			var confirmationLink = $"{baseUrl}/api/auth/confirm-email?userId={user.Id}&token={token}";
-
-			// Email Subject
-			var subject = "Welcome to Ideal Trip - Confirm Your Email";
-
-			// Email Content
-			var headerText = "Email Confirmation Required";
-			var bodyContent = $@"
-    <p>Hello {user.FullName},</p>
-    <p>Welcome to <b>Ideal Trip</b>! We are thrilled to have you as a {role} on our platform.</p>
-    <p>To get started, please confirm your email address by clicking the button below:</p>";
-			var buttonText = "Confirm Email";
-			var buttonLink = confirmationLink;
-
-			// Generate Email Body Using Template
-			var emailBody = EmailTemplateHelper.GenerateEmailTemplate(headerText, bodyContent, buttonText, buttonLink);
-
-			// Send Email
-			var emailSent = await _emailService.SendEmailAsync(user.Email, subject, emailBody);
-
-			if (!emailSent)
-				return BadRequest("Failed to send confirmation email.");
-
-			return Ok("Registration successful! A confirmation email has been sent to your email address. Please check your inbox to confirm your account.");
-			}
-			catch (Exception ex)
-			{
-				// Log the exception (you can use a logger here)
-				_logger.LogError(ex, "An error occurred while registering the user.");
-
-				// Return a generic error message
-				return StatusCode(500, new { Message = "Unable to perform the task now. Please try again later." });
-			}
-		}
 
 
 		[HttpGet("confirm-email")]
@@ -399,7 +427,7 @@ namespace IdealTrip.Controllers
 			return Ok(new { Message = "User updated successfully.", ProfilePhotoPath = user.ProfilePhotoPath });
 		}
 		#region UsersInfo
-		
+
 		#endregion
 
 
@@ -407,6 +435,33 @@ namespace IdealTrip.Controllers
 
 		private async Task<string> SaveFile(IFormFile file, string directory, string userId)
 		{
+			// Common file validations
+			var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" }; // Default allowed extensions
+			var maxFileSize = 5 * 1024 * 1024; // Max file size: 5 MB
+
+			// If saving proofs, extend allowed file types
+			if (directory == "proofs")
+			{
+				allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png" }; // Include PDFs for proofs
+			}
+
+			// Get file extension
+			var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+			// Validate file type
+			if (!allowedExtensions.Contains(fileExtension))
+			{
+				throw new InvalidOperationException(
+					$"Invalid file type for {directory}. Allowed types are: {string.Join(", ", allowedExtensions)}"
+				);
+			}
+
+			// Validate file size
+			if (file.Length > maxFileSize)
+			{
+				throw new InvalidOperationException($"File size exceeds the maximum limit of {maxFileSize / (1024 * 1024)} MB.");
+			}
+
 			// Create a user-specific directory
 			var userDirectory = Path.Combine("wwwroot", directory, userId);
 			if (!Directory.Exists(userDirectory))
@@ -425,8 +480,10 @@ namespace IdealTrip.Controllers
 			}
 
 			// Return relative path for database storage
-			return Path.Combine(directory, userId, fileName);
+			return Path.Combine(directory, userId, fileName).Replace("\\", "/");
 		}
+
+
 
 	}
 }

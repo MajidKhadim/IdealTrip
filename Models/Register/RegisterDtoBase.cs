@@ -15,7 +15,11 @@ namespace IdealTrip.Models.Register
 		[Required]
 		[MinLength(6)]
 		public string ConfirmPassword {  get; set; }
+
+        [Required]
         public string PhoneNumber { get; set; }
+        [Required]
+        public string Address { get; set; }
         public IFormFile? ProfilePhoto { get; set; }
     }
 }

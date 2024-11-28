@@ -16,7 +16,7 @@ namespace IdealTrip.Models
 			public string FullName { get; set; }
 
 			public bool IsEmailConfirmed { get; set; } = false; 
-
+			public string Address { get; set; }
 			[Required]
 			[MaxLength(50)]
 			public string Role { get; set; }
