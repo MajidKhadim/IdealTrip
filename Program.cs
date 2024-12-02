@@ -8,8 +8,10 @@ using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Text;
 using DotNetEnv;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
+
 
 DotNetEnv.Env.Load();
 // JWT Configuration
@@ -17,6 +19,7 @@ var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 builder.Services.AddSingleton<JwtHelper>();
 builder.Services.AddSingleton<EmailService>();
+builder.Services.AddScoped<IUserService,UserService>();
 
 builder.Services.AddAuthentication(options =>
 {
@@ -33,7 +36,8 @@ builder.Services.AddAuthentication(options =>
 		ValidateIssuerSigningKey = true,
 		ValidIssuer = jwtSettings["Issuer"],
 		ValidAudience = jwtSettings["Audience"],
-		IssuerSigningKey = new SymmetricSecurityKey(key)
+		IssuerSigningKey = new SymmetricSecurityKey(key),
+		RoleClaimType = ClaimTypes.Role
 	};
 });
 // Add services to the container.
@@ -47,6 +51,7 @@ builder.Services.AddCors(options => options.AddPolicy("AllowAnyOrigin",
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
 	options.UseSqlServer(builder.Configuration["ENV_IDEALTRIPDBCONNECTION"]);
@@ -55,14 +60,26 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 {
 	options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_?&@.!$*+,. ";
-	options.User.RequireUniqueEmail = true; // Email remains unique
+	options.User.RequireUniqueEmail = true;
+	options.Password.RequireNonAlphanumeric = false;
+	options.Password.RequireDigit = true;
+	options.Password.RequireLowercase = true;
+	options.Password.RequireUppercase = true;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
-.AddDefaultTokenProviders()
-.AddUserValidator<NonUniqueUserNameValidator>();
+.AddDefaultTokenProviders();
+
+builder.Services.AddAuthorization(options =>
+{
+	options.AddPolicy("Admin", policy =>
+	{
+		policy.RequireRole("Admin"); // Ensure only users with the "Admin" role can access
+	});
+});
 
 
 var app = builder.Build();
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -73,6 +90,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAnyOrigin");
+app.UseAuthentication();
 
 app.UseAuthorization();
 

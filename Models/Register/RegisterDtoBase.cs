@@ -17,6 +17,7 @@ namespace IdealTrip.Models.Register
 		public string ConfirmPassword {  get; set; }
 
         [Required]
+        [Phone]
         public string PhoneNumber { get; set; }
         [Required]
         public string Address { get; set; }

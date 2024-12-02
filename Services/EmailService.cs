@@ -1,9 +1,8 @@
 ﻿using SendGrid;
 using SendGrid.Helpers.Mail;
 using Microsoft.Extensions.Configuration;
-using System.Threading.Tasks;
-using System.Net.Mail;
 using System;
+using System.Threading.Tasks;
 
 namespace IdealTrip.Services
 {

@@ -13,12 +13,22 @@
         "IsRequired": true
       }
     ],
-    "ReturnTypes": []
+    "ReturnTypes": [
+      {
+        "Type": "IdealTrip.Models.DataSendingResponse",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
   },
   {
     "ContainingType": "IdealTrip.Controllers.AdministrationController",
     "Method": "DeleteUser",
-    "RelativePath": "api/Administration/delete-user",
+    "RelativePath": "api/Administration/delete-user/{guid}",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
@@ -26,10 +36,40 @@
       {
         "Name": "guid",
         "Type": "System.Guid",
-        "IsRequired": false
+        "IsRequired": true
       }
     ],
-    "ReturnTypes": []
+    "ReturnTypes": [
+      {
+        "Type": "IdealTrip.Models.DataSendingResponse",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "IdealTrip.Controllers.AdministrationController",
+    "Method": "GetTourists",
+    "RelativePath": "api/Administration/get-tourists",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "IdealTrip.Models.DataSendingResponse",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
   },
   {
     "ContainingType": "IdealTrip.Controllers.AdministrationController",
@@ -41,7 +81,7 @@
     "Parameters": [],
     "ReturnTypes": [
       {
-        "Type": "System.Collections.Generic.List\u00601[[IdealTrip.Models.AdminView.AllUsersAdminViewDto, IdealTrip, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "Type": "IdealTrip.Models.DataSendingResponse",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -61,7 +101,7 @@
     "Parameters": [],
     "ReturnTypes": [
       {
-        "Type": "System.Collections.Generic.List\u00601[[IdealTrip.Models.AdminView.PendingUsersAdminViewDto, IdealTrip, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "Type": "IdealTrip.Models.DataSendingResponse",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -85,65 +125,273 @@
         "IsRequired": true
       }
     ],
-    "ReturnTypes": []
+    "ReturnTypes": [
+      {
+        "Type": "IdealTrip.Models.DataSendingResponse",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
   },
   {
-    "ContainingType": "IdealTrip.Controllers.UserAccountController",
-    "Method": "ConfirmEmail",
-    "RelativePath": "api/UserAccount/confirm-email",
+    "ContainingType": "IdealTrip.Controllers.AdministrationController",
+    "Method": "GetAllTimeUsers",
+    "RelativePath": "api/Administration/stats/all-time",
     "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "IdealTrip.Models.DataSendingResponse",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "IdealTrip.Controllers.AdministrationController",
+    "Method": "GetLast30DaysAddedUsers",
+    "RelativePath": "api/Administration/stats/last-30-days",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "IdealTrip.Models.DataSendingResponse",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "IdealTrip.Controllers.AuthController",
+    "Method": "AdminLogin",
+    "RelativePath": "api/Auth/admin-login",
+    "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "userId",
+        "Name": "model",
+        "Type": "IdealTrip.Models.Login.LoginModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "IdealTrip.Controllers.AuthController",
+    "Method": "ForgotPassword",
+    "RelativePath": "api/Auth/forgot-password",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "IdealTrip.Models.Login.ForgetPasswordModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "IdealTrip.Controllers.AuthController",
+    "Method": "LoginAsync",
+    "RelativePath": "api/Auth/login",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "IdealTrip.Models.Login.LoginModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "IdealTrip.Controllers.AuthController",
+    "Method": "RegisterHotelOwner",
+    "RelativePath": "api/Auth/register/hotelowner",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "PropertyOwnerShipDoc",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      },
+      {
+        "Name": "ImageGalleryDoc",
+        "Type": "System.Collections.Generic.ICollection\u00601[[Microsoft.AspNetCore.Http.IFormFile, Microsoft.AspNetCore.Http.Features, Version=8.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "FullName",
         "Type": "System.String",
         "IsRequired": false
       },
       {
-        "Name": "token",
+        "Name": "Email",
         "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Password",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "ConfirmPassword",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "PhoneNumber",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Address",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "ProfilePhoto",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
         "IsRequired": false
       }
     ],
     "ReturnTypes": []
   },
   {
-    "ContainingType": "IdealTrip.Controllers.UserAccountController",
-    "Method": "ForgotPassword",
-    "RelativePath": "api/UserAccount/forgot-password",
+    "ContainingType": "IdealTrip.Controllers.AuthController",
+    "Method": "RegisterLocalHomeOwner",
+    "RelativePath": "api/Auth/register/localhomeowner",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "model",
-        "Type": "IdealTrip.Models.Login.ForgetPasswordDto",
-        "IsRequired": true
+        "Name": "PropertyOwnerShipDoc",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      },
+      {
+        "Name": "ImageGalleryDoc",
+        "Type": "System.Collections.Generic.ICollection\u00601[[Microsoft.AspNetCore.Http.IFormFile, Microsoft.AspNetCore.Http.Features, Version=8.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "FullName",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Email",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Password",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "ConfirmPassword",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "PhoneNumber",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Address",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "ProfilePhoto",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []
   },
   {
-    "ContainingType": "IdealTrip.Controllers.UserAccountController",
-    "Method": "Login",
-    "RelativePath": "api/UserAccount/login",
+    "ContainingType": "IdealTrip.Controllers.AuthController",
+    "Method": "RegisterTourGuide",
+    "RelativePath": "api/Auth/register/tourguide",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "model",
-        "Type": "IdealTrip.Models.Login.LoginDto",
-        "IsRequired": true
+        "Name": "IdCard",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      },
+      {
+        "Name": "FullName",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Email",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Password",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "ConfirmPassword",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "PhoneNumber",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Address",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "ProfilePhoto",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []
   },
   {
-    "ContainingType": "IdealTrip.Controllers.UserAccountController",
+    "ContainingType": "IdealTrip.Controllers.AuthController",
     "Method": "RegisterTourist",
-    "RelativePath": "api/UserAccount/register/tourist",
+    "RelativePath": "api/Auth/register/tourist",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
@@ -187,9 +435,9 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "IdealTrip.Controllers.UserAccountController",
-    "Method": "RegisterTransportProvider",
-    "RelativePath": "api/UserAccount/register/transporter",
+    "ContainingType": "IdealTrip.Controllers.AuthController",
+    "Method": "RegisterTransporter",
+    "RelativePath": "api/Auth/register/transporter",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
@@ -248,50 +496,71 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "IdealTrip.Controllers.UserAccountController",
-    "Method": "ResetPassword",
-    "RelativePath": "api/UserAccount/reset-password",
+    "ContainingType": "IdealTrip.Controllers.AuthController",
+    "Method": "ResendOtp",
+    "RelativePath": "api/Auth/resend-otp",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
         "Name": "model",
-        "Type": "IdealTrip.Models.Login.ResetPasswordDto",
+        "Type": "IdealTrip.Models.Register.ResendOtpModel",
         "IsRequired": true
       }
     ],
     "ReturnTypes": []
   },
   {
-    "ContainingType": "IdealTrip.Controllers.UserAccountController",
-    "Method": "UpdateUser",
-    "RelativePath": "api/UserAccount/update-user/{userId}",
+    "ContainingType": "IdealTrip.Controllers.AuthController",
+    "Method": "ResetPassword",
+    "RelativePath": "api/Auth/reset-password",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "userId",
-        "Type": "System.String",
+        "Name": "model",
+        "Type": "IdealTrip.Models.Login.ResetPasswordModel",
         "IsRequired": true
-      },
-      {
-        "Name": "FullName",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "Address",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "ProfilePhoto",
-        "Type": "Microsoft.AspNetCore.Http.IFormFile",
-        "IsRequired": false
       }
     ],
-    "ReturnTypes": []
+    "ReturnTypes": [
+      {
+        "Type": "IdealTrip.Models.UserManagerResponse",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "IdealTrip.Controllers.AuthController",
+    "Method": "VerifyOtp",
+    "RelativePath": "api/Auth/verify-otp",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "IdealTrip.Models.Register.VerifyOTPModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "IdealTrip.Models.UserManagerResponse",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
   }
 ]

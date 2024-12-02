@@ -16,7 +16,7 @@ namespace IdealTrip.Helpers
 			_configuration = configuration;
 		}
 
-		public string GenerateToken(string userId, string email, string role)
+		public JwtSecurityToken? GenerateToken(string userId, string email, string role)
 		{
 			var jwtSettings = _configuration.GetSection("Jwt");
 			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["ENV_JWT_SECRET_KEY"]));
@@ -24,7 +24,7 @@ namespace IdealTrip.Helpers
 
 			var claims = new[]
 			{
-				new Claim(JwtRegisteredClaimNames.Sub, userId),
+				new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
 				new Claim(JwtRegisteredClaimNames.Email, email),
 				new Claim(ClaimTypes.Role, role),
 				new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
@@ -38,7 +38,7 @@ namespace IdealTrip.Helpers
 				signingCredentials: credentials
 			);
 
-			return new JwtSecurityTokenHandler().WriteToken(token);
+			return token;
 		}
 	}
 }
