@@ -1,6 +1,6 @@
 ﻿namespace IdealTrip.Models
 {
-	public class UpdateUserDto
+	public class UpdateUserModel
 	{
         public string FullName { get; set; }
         public string Address { get; set; }

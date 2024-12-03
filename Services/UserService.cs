@@ -3,6 +3,7 @@ using IdealTrip.Models;
 using IdealTrip.Models.Enums;
 using IdealTrip.Models.Login;
 using IdealTrip.Models.Register;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -11,6 +12,7 @@ using System.Collections.Concurrent;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -564,7 +566,7 @@ namespace IdealTrip.Services
 
 		public async Task<bool> SendOtpAsync(string email)
 		{
-			var otp = new Random().Next(100000, 999999).ToString();
+			var otp = new Random().Next(1000, 9999).ToString();
 			_otpStorage[email] = (otp, DateTime.UtcNow.AddMinutes(5));
 
 			string emailContent = EmailTemplates.OtpEmailTemplate(otp);
@@ -637,13 +639,11 @@ namespace IdealTrip.Services
 						Messege = "No user found with this email."
 					};
 				}
+				var otp = new Random().Next(1000, 9999).ToString();
+				_otpStorage[email] = (otp, DateTime.UtcNow.AddMinutes(5));
 
-				var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-				var resetLink = $"{_config["BASE_URL"]}/reset-password?email={email}&token={Uri.EscapeDataString(token)}";
-
-				string subject = "Reset Your Password";
-				var emailContent = EmailTemplates.ForgetPasswordEmailTemplate(user.UserName,resetLink);
-				var emailSent = await _emailService.SendEmailAsync(email, subject, emailContent);
+				string emailContent = EmailTemplates.ForgetPasswordEmailTemplate(user.FullName,otp);
+				var emailSent = await _emailService.SendEmailAsync(email, "Your OTP Code", emailContent);
 				if (!emailSent)
 				{
 					return new UserManagerResponse
@@ -772,6 +772,59 @@ namespace IdealTrip.Services
 		#endregion
 		#region User Management
 
+		public async Task<UserManagerResponse> UpdateUser(UpdateUserModel model,string userId)
+		{
+			try
+			{
+				var user = await _userManager.FindByIdAsync(userId);
+				if (user == null)
+				{
+					return new UserManagerResponse
+					{
+						IsSuccess = false,
+						Messege = "User Not Found"
+					};
+				}
+				user.FullName = model.FullName;
+				user.Address = model.Address;
+				if (model.ProfilePhoto != null)
+				{
+					var filePath = await SaveFileWithValidation(user.Id, "profilephotos", model.ProfilePhoto);
+					if (!filePath.IsSuccess)
+					{
+						return new UserManagerResponse
+						{
+							IsSuccess = false,
+							Messege = "Something went wrong while saving the file"
+						};
+					}
+					user.ProfilePhotoPath = filePath.Path;
+					var result = await _userManager.UpdateAsync(user);
+					if (result.Succeeded)
+					{
+						return new UserManagerResponse
+						{
+							IsSuccess = true,
+							Messege = "User data updated succesfully"
+						};
+					}
+				}
+				return new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = "Something went wr"
+				};
+			}
+			catch (Exception ex)
+			{
+				_logger.LogInformation("Failed to update user ",ex.Message);
+				return new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = ex.Message
+				};
+			}
+		}
 		public async Task<bool> IsAdmin(string email)
 		{
 			var user = await _userManager.FindByEmailAsync(email);
@@ -790,7 +843,6 @@ namespace IdealTrip.Services
 				? new UserManagerResponse { IsSuccess = true, Messege = "User deleted successfully." }
 				: new UserManagerResponse { IsSuccess = false, Messege = "Error deleting user." };
 		}
-
 		#endregion
 	}
 

@@ -2,7 +2,7 @@
 {
 	public static class EmailTemplates
 	{
-		public static string ForgetPasswordEmailTemplate(string userFullName, string resetLink)
+		public static string ForgetPasswordEmailTemplate(string userFullName, string otp)
 		{
 			return $@"
 <!DOCTYPE html>
@@ -43,21 +43,15 @@
             color: #333333;
             font-size: 15px;
         }}
-        .email-content p {{
-            margin: 10px 0;
-        }}
-        .email-content a {{
-            display: inline-block;
-            margin: 20px 0;
-            padding: 12px 20px;
-            background-color: #28a745;
-            color: #ffffff;
-            text-decoration: none;
+        .otp-box {{
+            margin: 20px auto;
+            padding: 15px;
+            text-align: center;
+            background-color: #f2f4f7;
             border-radius: 5px;
+            font-size: 24px;
             font-weight: bold;
-        }}
-        .email-content a:hover {{
-            background-color: #218838;
+            color: #0078d7;
         }}
         .email-footer {{
             text-align: center;
@@ -85,8 +79,9 @@
         <div class='email-content'>
             <p>Hello {userFullName},</p>
             <p>You requested a password reset for your account.</p>
-            <p>Click the button below to reset your password:</p>
-            <a href='{resetLink}' target='_blank'>Reset Password</a>
+            <p>Your One-Time Password (OTP) for password verification is:</p>
+            <div class='otp-box'>{otp}</div>
+            <p>This OTP is valid for 5 minutes. Please use it promptly to reset your password.</p>
             <p>If you did not request this, please ignore this email.</p>
         </div>
         <div class='email-regards'>
