@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace IdealTrip.Controllers
 {
 	[Route("api/[controller]")]
-	[ApiController]
 	public class AuthController : ControllerBase
 	{
 		private readonly IUserService _userService;
@@ -309,7 +308,7 @@ namespace IdealTrip.Controllers
 			{
 				if (ModelState.IsValid)
 				{
-					var result = await _userService.SendPasswordResetLinkAsync(model.EmailAddress);
+					var result = await _userService.SendEmailVerificationAsync(model.EmailAddress);
 					if (result)
 					{
 						return Ok(new UserManagerResponse
@@ -318,7 +317,11 @@ namespace IdealTrip.Controllers
 							IsSuccess = true
 						});
 					}
-					return BadRequest(result);
+					return BadRequest(new UserManagerResponse
+					{
+						Messege = "Failed to reset Link.. Please Try Again Later",
+						IsSuccess = false
+					});
 				}
 				return BadRequest(new UserManagerResponse
 				{
@@ -359,15 +362,22 @@ namespace IdealTrip.Controllers
 		[HttpGet("confirm-email")]
 		public async Task<IActionResult> ConfirmEmail(string userId, string token)
 		{
+			if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(userId))
+				return BadRequest(new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = "Invalid email confirmation request."
+				}
+			);
 			var result = await _userService.ConfirmEmail(userId, token);
 			if (result.IsSuccess)
 			{
-				return Ok(result);
+				return Redirect(result.Messege);
 			}
 			return BadRequest(result);
 		}
-		[HttpPost("resend-registration-link")]
-		public async Task<IActionResult> ResendRegistrationLink([FromBody] ResendLinkModel model)
+		[HttpPost("resend-link")]
+		public async Task<IActionResult> ResendLink([FromBody] ResendLinkModel model)
 		{
 			try
 			{
@@ -403,43 +413,43 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-		[HttpPost("resend-reset-password-link")]
-		public async Task<IActionResult> ResendResetPasswordLink([FromBody] ResendLinkModel model)
-		{
-			try
-			{
-				if (ModelState.IsValid)
-				{
-					var emailSent = await _userService.SendPasswordResetLinkAsync(model.email);
-					if (emailSent)
-					{
-						return Ok(new UserManagerResponse
-						{
-							Messege = "Link has been resent to your email.",
-							IsSuccess = true
-						});
-					}
-					return BadRequest(new UserManagerResponse
-					{
-						Messege = "Unable to resend Link. Please try again.",
-						IsSuccess = false
-					});
-				}
-				return BadRequest(new UserManagerResponse
-				{
-					Messege = "Invalid request properties.",
-					IsSuccess = false
-				});
-			}
-			catch (Exception ex)
-			{
-				return StatusCode(500, new UserManagerResponse
-				{
-					Messege = "Unable to resend Link. Please try again later.",
-					IsSuccess = false
-				});
-			}
-		}
+		//[HttpPost("resend-reset-password-link")]
+		//public async Task<IActionResult> ResendResetPasswordLink([FromBody] ResendLinkModel model)
+		//{
+		//	try
+		//	{
+		//		if (ModelState.IsValid)
+		//		{
+		//			var emailSent = await _userService.SendPasswordResetLinkAsync(model.email);
+		//			if (emailSent)
+		//			{
+		//				return Ok(new UserManagerResponse
+		//				{
+		//					Messege = "Link has been resent to your email.",
+		//					IsSuccess = true
+		//				});
+		//			}
+		//			return BadRequest(new UserManagerResponse
+		//			{
+		//				Messege = "Unable to resend Link. Please try again.",
+		//				IsSuccess = false
+		//			});
+		//		}
+		//		return BadRequest(new UserManagerResponse
+		//		{
+		//			Messege = "Invalid request properties.",
+		//			IsSuccess = false
+		//		});
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		return StatusCode(500, new UserManagerResponse
+		//		{
+		//			Messege = "Unable to resend Link. Please try again later.",
+		//			IsSuccess = false
+		//		});
+		//	}
+		//}
 
 
 	}

@@ -195,6 +195,27 @@
   },
   {
     "ContainingType": "IdealTrip.Controllers.AuthController",
+    "Method": "ConfirmEmail",
+    "RelativePath": "api/Auth/confirm-email",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "userId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "token",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "IdealTrip.Controllers.AuthController",
     "Method": "ForgotPassword",
     "RelativePath": "api/Auth/forgot-password",
     "HttpMethod": "POST",
@@ -497,15 +518,15 @@
   },
   {
     "ContainingType": "IdealTrip.Controllers.AuthController",
-    "Method": "ResendOtp",
-    "RelativePath": "api/Auth/resend-otp",
+    "Method": "ResendLink",
+    "RelativePath": "api/Auth/resend-link",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
         "Name": "model",
-        "Type": "IdealTrip.Models.Register.ResendOtpModel",
+        "Type": "IdealTrip.Models.Register.ResendLinkModel",
         "IsRequired": true
       }
     ],
@@ -525,42 +546,6 @@
         "IsRequired": true
       }
     ],
-    "ReturnTypes": [
-      {
-        "Type": "IdealTrip.Models.UserManagerResponse",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
-  },
-  {
-    "ContainingType": "IdealTrip.Controllers.AuthController",
-    "Method": "VerifyOtp",
-    "RelativePath": "api/Auth/verify-otp",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "model",
-        "Type": "IdealTrip.Models.Register.VerifyOTPModel",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": [
-      {
-        "Type": "IdealTrip.Models.UserManagerResponse",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
+    "ReturnTypes": []
   }
 ]

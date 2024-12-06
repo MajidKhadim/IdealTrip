@@ -23,7 +23,7 @@ namespace IdealTrip.Services
 		Task<UserManagerResponse> DeleteUser(string userEmail);
 
 		//Task<UserManagerResponse> ForgotPasswordAsync(string email);
-		public Task<bool> SendPasswordResetLinkAsync(string email);
+		//public Task<bool> SendPasswordResetLinkAsync(string email);
 		Task<UserManagerResponse> ResetPasswordAsync(ResetPasswordModel model);
 
 		Task<bool> IsAdmin(string email);
@@ -34,8 +34,6 @@ namespace IdealTrip.Services
 
 	public class UserService : IUserService
 	{
-		private readonly IUrlHelper _urlHelper;
-		private readonly IHttpContextAccessor _httpContextAccessor;
 		private readonly UserManager<ApplicationUser> _userManager;
 		private readonly ApplicationDbContext _context;
 		private readonly EmailService _emailService;
@@ -49,9 +47,7 @@ namespace IdealTrip.Services
 			EmailService emailService,
 			IConfiguration config,
 			ILogger<UserService> logger,
-			JwtHelper jwtHelper,
-			IUrlHelper urlHelper,
-			IHttpContextAccessor httpContextAccessor)
+			JwtHelper jwtHelper)
 		{
 			_userManager = userManager;
 			_context = context;
@@ -59,8 +55,6 @@ namespace IdealTrip.Services
 			_config = config;
 			_logger = logger;
 			_JwtHelper = jwtHelper;
-			_urlHelper = urlHelper;
-			_httpContextAccessor = httpContextAccessor;
 		}
 
 		#region Registration
@@ -565,17 +559,31 @@ namespace IdealTrip.Services
 		{
 			var user = await _userManager.FindByEmailAsync(email);
 			if (user == null) return false;
+			string token;
+			var subject = "";
+			string emailContent;
+			if (!user.EmailConfirmed)
+			{
+				token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+				var userId = user.Id.ToString();
+				// Backend API endpoint for email confirmation
+				var callbackUrl = $"https://localhost:7216/api/auth/confirm-email?token={Uri.EscapeDataString(token)}&userId={Uri.EscapeDataString(userId)}";
 
-			var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-			var callbackUrl = _urlHelper.Action(
-				action: "ConfirmEmail",
-				controller: "Auth",
-				values: new { userId = user.Id, token },
-				protocol: _httpContextAccessor.HttpContext.Request.Scheme
-			);
+				emailContent = EmailTemplates.EmailVerificationTemplate(user.FullName, callbackUrl);
+				subject = "Confirm Your Email";
+			}
+			else
+			{
+				token = await _userManager.GeneratePasswordResetTokenAsync(user);
+				// navigate to change password page
+				var userId = user.Id.ToString();
+				// Construct the callback URL with token and userId as query parameters
+				var callbackUrl = $"http://localhost:3000/change-password?token={Uri.EscapeDataString(token)}&userId={Uri.EscapeDataString(userId)}";
 
-			var emailContent = EmailTemplates.EmailVerificationTemplate(user.FullName,callbackUrl);
-			var result = await _emailService.SendEmailAsync(email, "Confirm Your Email", emailContent);
+				emailContent = EmailTemplates.EmailVerificationTemplate(user.FullName, callbackUrl);
+				subject = "Reset Your Password";
+			}
+			var result = await _emailService.SendEmailAsync(email, subject, emailContent);
 			return result;
 		}
 		public async Task<UserManagerResponse> ConfirmEmail(string userId, string token)
@@ -587,14 +595,33 @@ namespace IdealTrip.Services
 					IsSuccess = false,
 					Messege = "Invalid User"
 				};
-
-			var result = await _userManager.ConfirmEmailAsync(user, token);
-			if (result.Succeeded)
+			if (user.EmailConfirmed) 
 			{
 				return new UserManagerResponse
 				{
 					IsSuccess = true,
-					Messege = "Email Confirmed Successfull"
+					Messege = "Email Already Verified"
+				};
+			}
+
+			var result = await _userManager.ConfirmEmailAsync(user, token);
+			if (result.Succeeded)
+			{
+				string link;
+				var roles = await _userManager.GetRolesAsync(user);
+				if (roles.Contains("Tourist"))
+				{
+					link = "http://localhost:3000/email-verified";  // Redirect to the email verified page for tourists
+				}
+				else
+				{
+					// If the user is not a tourist, redirect to the pending approval page
+					 link = "http://localhost:3000/account-pending-approval";  // This page informs the user that their info is sent for admin approval
+				}
+				return new UserManagerResponse
+				{
+					IsSuccess = true,
+					Messege = link
 				};
 			}
 
@@ -605,49 +632,6 @@ namespace IdealTrip.Services
 			};
 		}
 		#endregion
-		#region OTP Management
-
-		//public async Task<bool> SendOtpAsync(string email)
-		//{
-		//	var otp = new Random().Next(1000, 9999).ToString();
-
-		//	// Check if an OTP already exists for the email and remove it
-		//	if (_otpStorage.ContainsKey(email))
-		//	{
-		//		_otpStorage.TryRemove(email,out _);
-		//	}
-
-		//	// Add the new OTP to the storage with an expiration time
-		//	_otpStorage[email] = (otp, DateTime.Now.AddMinutes(5));
-
-		//	// Prepare the email content and send the OTP
-		//	string emailContent = "Hello";
-		//	return await _emailService.SendEmailAsync(email, "Your OTP Code", emailContent);
-		//}
-
-
-		//public async Task<bool> VerifyOtp(string email, string otp)
-		//{
-		//	if (_otpStorage.TryGetValue(email, out var otpInfo))
-		//	{
-		//		if (otpInfo.Otp == otp && DateTime.Now <= otpInfo.Expiry)
-		//		{
-		//			_otpStorage.TryRemove(email, out _);
-		//			var user = await _userManager.FindByEmailAsync(email);
-		//			if (user != null) 
-		//			{
-		//				user.IsEmailConfirmed = true;
-		//				user.EmailConfirmed = true;
-		//				var result = await _userManager.UpdateAsync(user);
-
-		//				return result.Succeeded;
-		//			}
-		//		}
-		//	}
-		//	return false;
-		//}
-
-		#endregion
 
 		#region Login
 
@@ -655,7 +639,7 @@ namespace IdealTrip.Services
 		{
 			var user = await _userManager.FindByEmailAsync(model.Email);
 			if (user == null)
-				return new UserManagerResponse { IsSuccess = false, Messege = "User not found." };
+				return new UserManagerResponse { IsSuccess = false, Messege = "This Email is not associated with any Account.. Try Signing Up!!" };
 
 			if (!await _userManager.IsEmailConfirmedAsync(user))
 				return new UserManagerResponse { IsSuccess = false, Messege = "Email not confirmed." };
@@ -679,25 +663,25 @@ namespace IdealTrip.Services
 
 		#region Password Management
 
-		public async Task<bool> SendPasswordResetLinkAsync(string email)
-		{
-			var user = await _userManager.FindByEmailAsync(email);
-			if (user == null) return false;
+		//public async Task<bool> SendPasswordResetLinkAsync(string email)
+		//{
+		//	var user = await _userManager.FindByEmailAsync(email);
+		//	if (user == null) return false;
 
-			var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-			var callbackUrl = _urlHelper.Action(
-				action: "ResetPassword",
-				controller: "Auth",
-				values: new { userId = user.Id, token = token },
-				protocol: _httpContextAccessor.HttpContext.Request.Scheme
-			);
+		//	var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+		//	var callbackUrl = _urlHelper.Action(
+		//		action: "ResetPassword",
+		//		controller: "Auth",
+		//		values: new { userId = user.Id, token },
+		//		protocol: _httpContextAccessor.HttpContext.Request.Scheme
+		//	);
 
-			var emailContent = EmailTemplates.ForgetPasswordEmailTemplate(user.FullName, callbackUrl);
-			var result = await _emailService.SendEmailAsync(email, "Reset Your Password", emailContent);
+		//	var emailContent = EmailTemplates.ForgetPasswordEmailTemplate(user.FullName, callbackUrl);
+		//	var result = await _emailService.SendEmailAsync(email, "Reset Your Password", emailContent);
 
-			return result;
+		//	return result;
 
-		}
+		//}
 
 		public async Task<UserManagerResponse> ResetPasswordAsync(ResetPasswordModel model)
 		{
