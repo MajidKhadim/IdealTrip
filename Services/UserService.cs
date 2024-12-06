@@ -3,19 +3,10 @@ using IdealTrip.Models;
 using IdealTrip.Models.Enums;
 using IdealTrip.Models.Login;
 using IdealTrip.Models.Register;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System;
+using Microsoft.AspNetCore.Mvc;
 using System.Collections.Concurrent;
 using System.IdentityModel.Tokens.Jwt;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace IdealTrip.Services
 {
@@ -27,24 +18,29 @@ namespace IdealTrip.Services
 		Task<UserManagerResponse> RegisterTourGuideAsync(RegisterTourGuideModel model, string role);
 		Task<UserManagerResponse> RegisterHotelOwnerAsync(RegisterHotelOwnerModel model, string role);
 		Task<UserManagerResponse> LoginUserAsync(LoginModel model);
-		Task<bool> SendOtpAsync(string email);
-		Task<bool> VerifyOtp(string email, string otp);
+		//Task<bool> SendOtpAsync(string email);
+		//Task<bool> VerifyOtp(string email, string otp);
 		Task<UserManagerResponse> DeleteUser(string userEmail);
 
-		Task<UserManagerResponse> ForgotPasswordAsync(string email);
-		Task<UserManagerResponse> ResetPasswordAsync(string email, string token, string newPassword);
+		//Task<UserManagerResponse> ForgotPasswordAsync(string email);
+		public Task<bool> SendPasswordResetLinkAsync(string email);
+		Task<UserManagerResponse> ResetPasswordAsync(ResetPasswordModel model);
 
 		Task<bool> IsAdmin(string email);
+
+		Task<UserManagerResponse> ConfirmEmail(string userId,string token);
+		public Task<bool> SendEmailVerificationAsync(string email);
 	}
 
 	public class UserService : IUserService
 	{
+		private readonly IUrlHelper _urlHelper;
+		private readonly IHttpContextAccessor _httpContextAccessor;
 		private readonly UserManager<ApplicationUser> _userManager;
 		private readonly ApplicationDbContext _context;
 		private readonly EmailService _emailService;
 		private readonly IConfiguration _config;
 		private readonly ILogger<UserService> _logger;
-		private static readonly ConcurrentDictionary<string, (string Otp, DateTime Expiry)> _otpStorage = new();
 		public readonly JwtHelper _JwtHelper;
 
 		public UserService(
@@ -53,7 +49,9 @@ namespace IdealTrip.Services
 			EmailService emailService,
 			IConfiguration config,
 			ILogger<UserService> logger,
-			JwtHelper jwtHelper)
+			JwtHelper jwtHelper,
+			IUrlHelper urlHelper,
+			IHttpContextAccessor httpContextAccessor)
 		{
 			_userManager = userManager;
 			_context = context;
@@ -61,6 +59,8 @@ namespace IdealTrip.Services
 			_config = config;
 			_logger = logger;
 			_JwtHelper = jwtHelper;
+			_urlHelper = urlHelper;
+			_httpContextAccessor = httpContextAccessor;
 		}
 
 		#region Registration
@@ -559,40 +559,93 @@ namespace IdealTrip.Services
 				};
 			}
 		}
-
 		#endregion
+		#region Email Confirmation
+		public async Task<bool> SendEmailVerificationAsync(string email)
+		{
+			var user = await _userManager.FindByEmailAsync(email);
+			if (user == null) return false;
 
+			var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+			var callbackUrl = _urlHelper.Action(
+				action: "ConfirmEmail",
+				controller: "Auth",
+				values: new { userId = user.Id, token },
+				protocol: _httpContextAccessor.HttpContext.Request.Scheme
+			);
+
+			var emailContent = EmailTemplates.EmailVerificationTemplate(user.FullName,callbackUrl);
+			var result = await _emailService.SendEmailAsync(email, "Confirm Your Email", emailContent);
+			return result;
+		}
+		public async Task<UserManagerResponse> ConfirmEmail(string userId, string token)
+		{
+			var user = await _userManager.FindByIdAsync(userId);
+			if (user == null)
+				return new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = "Invalid User"
+				};
+
+			var result = await _userManager.ConfirmEmailAsync(user, token);
+			if (result.Succeeded)
+			{
+				return new UserManagerResponse
+				{
+					IsSuccess = true,
+					Messege = "Email Confirmed Successfull"
+				};
+			}
+
+			return new UserManagerResponse
+			{
+				IsSuccess = false,
+				Messege = "Error confirming email."
+			};
+		}
+		#endregion
 		#region OTP Management
 
-		public async Task<bool> SendOtpAsync(string email)
-		{
-			var otp = new Random().Next(1000, 9999).ToString();
-			_otpStorage[email] = (otp, DateTime.UtcNow.AddMinutes(5));
+		//public async Task<bool> SendOtpAsync(string email)
+		//{
+		//	var otp = new Random().Next(1000, 9999).ToString();
 
-			string emailContent = EmailTemplates.OtpEmailTemplate(otp);
-			return await _emailService.SendEmailAsync(email, "Your OTP Code", emailContent);
-		}
+		//	// Check if an OTP already exists for the email and remove it
+		//	if (_otpStorage.ContainsKey(email))
+		//	{
+		//		_otpStorage.TryRemove(email,out _);
+		//	}
 
-		public async Task<bool> VerifyOtp(string email, string otp)
-		{
-			if (_otpStorage.TryGetValue(email, out var otpInfo))
-			{
-				if (otpInfo.Otp == otp && DateTime.UtcNow <= otpInfo.Expiry)
-				{
-					_otpStorage.TryRemove(email, out _);
-					var user = await _userManager.FindByEmailAsync(email);
-					if (user != null) 
-					{
-						user.IsEmailConfirmed = true;
-						user.EmailConfirmed = true;
-						var result = await _userManager.UpdateAsync(user);
+		//	// Add the new OTP to the storage with an expiration time
+		//	_otpStorage[email] = (otp, DateTime.Now.AddMinutes(5));
 
-						return result.Succeeded;
-					}
-				}
-			}
-			return false;
-		}
+		//	// Prepare the email content and send the OTP
+		//	string emailContent = "Hello";
+		//	return await _emailService.SendEmailAsync(email, "Your OTP Code", emailContent);
+		//}
+
+
+		//public async Task<bool> VerifyOtp(string email, string otp)
+		//{
+		//	if (_otpStorage.TryGetValue(email, out var otpInfo))
+		//	{
+		//		if (otpInfo.Otp == otp && DateTime.Now <= otpInfo.Expiry)
+		//		{
+		//			_otpStorage.TryRemove(email, out _);
+		//			var user = await _userManager.FindByEmailAsync(email);
+		//			if (user != null) 
+		//			{
+		//				user.IsEmailConfirmed = true;
+		//				user.EmailConfirmed = true;
+		//				var result = await _userManager.UpdateAsync(user);
+
+		//				return result.Succeeded;
+		//			}
+		//		}
+		//	}
+		//	return false;
+		//}
 
 		#endregion
 
@@ -626,55 +679,31 @@ namespace IdealTrip.Services
 
 		#region Password Management
 
-		public async Task<UserManagerResponse> ForgotPasswordAsync(string email)
+		public async Task<bool> SendPasswordResetLinkAsync(string email)
 		{
-			try
-			{
-				var user = await _userManager.FindByEmailAsync(email);
-				if (user == null)
-				{
-					return new UserManagerResponse
-					{
-						IsSuccess = false,
-						Messege = "No user found with this email."
-					};
-				}
-				var otp = new Random().Next(1000, 9999).ToString();
-				_otpStorage[email] = (otp, DateTime.UtcNow.AddMinutes(5));
+			var user = await _userManager.FindByEmailAsync(email);
+			if (user == null) return false;
 
-				string emailContent = EmailTemplates.ForgetPasswordEmailTemplate(user.FullName,otp);
-				var emailSent = await _emailService.SendEmailAsync(email, "Your OTP Code", emailContent);
-				if (!emailSent)
-				{
-					return new UserManagerResponse
-					{
-						IsSuccess = false,
-						Messege = "Failed to send password reset email."
-					};
-				}
+			var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+			var callbackUrl = _urlHelper.Action(
+				action: "ResetPassword",
+				controller: "Auth",
+				values: new { userId = user.Id, token = token },
+				protocol: _httpContextAccessor.HttpContext.Request.Scheme
+			);
 
-				return new UserManagerResponse
-				{
-					IsSuccess = true,
-					Messege = "Password reset email sent successfully."
-				};
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError(ex, "Error in ForgotPasswordAsync");
-				return new UserManagerResponse
-				{
-					IsSuccess = false,
-					Messege = "An error occurred. Please try again later."
-				};
-			}
+			var emailContent = EmailTemplates.ForgetPasswordEmailTemplate(user.FullName, callbackUrl);
+			var result = await _emailService.SendEmailAsync(email, "Reset Your Password", emailContent);
+
+			return result;
+
 		}
 
-		public async Task<UserManagerResponse> ResetPasswordAsync(string email, string token, string newPassword)
+		public async Task<UserManagerResponse> ResetPasswordAsync(ResetPasswordModel model)
 		{
 			try
 			{
-				var user = await _userManager.FindByEmailAsync(email);
+				var user = await _userManager.FindByIdAsync(model.UserId);
 				if (user == null)
 				{
 					return new UserManagerResponse
@@ -683,8 +712,16 @@ namespace IdealTrip.Services
 						Messege = "No user found with this email."
 					};
 				}
+				if(model.NewPassword != model.ConfirmPassword)
+				{
+					return new UserManagerResponse
+					{
+						IsSuccess = false,
+						Messege = "Password and Confirm Password Mismatch!"
+					};
+				}
 
-				var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+				var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
 				if (result.Succeeded)
 				{
 					return new UserManagerResponse

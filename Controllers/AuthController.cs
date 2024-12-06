@@ -3,6 +3,7 @@ using IdealTrip.Models;
 using IdealTrip.Models.Login;
 using IdealTrip.Models.Register;
 using IdealTrip.Services;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IdealTrip.Controllers
@@ -18,6 +19,8 @@ namespace IdealTrip.Controllers
 			_userService = userService;
 		}
 
+		#region Registration
+
 		[HttpPost("register/tourist")]
 		public async Task<IActionResult> RegisterTourist([FromForm] RegisterTouristModel model)
 		{
@@ -29,16 +32,15 @@ namespace IdealTrip.Controllers
 					if (result.IsSuccess)
 					{
 						// Send OTP to user's email
-						var otpSent = await _userService.SendOtpAsync(model.Email);
-						if (otpSent)
+						var emailSent = await _userService.SendEmailVerificationAsync(model.Email);
+						if (emailSent)
 						{
 							return Ok(new UserManagerResponse
 							{
-								Messege = "Registration successful! OTP has been sent to your email.",
+								Messege = "Registration successful! Check your Email for Verification Link",
 								IsSuccess = true
 							});
 						}
-
 						// If OTP fails to send, delete the user and notify the client
 						await _userService.DeleteUser(model.Email);
 						return BadRequest(new UserManagerResponse
@@ -73,12 +75,12 @@ namespace IdealTrip.Controllers
 					if (result.IsSuccess)
 					{
 						// Send OTP to user's email
-						var otpSent = await _userService.SendOtpAsync(model.Email);
-						if (otpSent)
+						var emailSent = await _userService.SendEmailVerificationAsync(model.Email);
+						if (emailSent)
 						{
 							return Ok(new UserManagerResponse
 							{
-								Messege = "Registration successful! OTP has been sent to your email.",
+								Messege = "Registration successful! Check your Email for Verification Link",
 								IsSuccess = true
 							});
 						}
@@ -115,12 +117,12 @@ namespace IdealTrip.Controllers
 					if (result.IsSuccess)
 					{
 						// Send OTP to user's email
-						var otpSent = await _userService.SendOtpAsync(model.Email);
-						if (otpSent)
+						var emailSent = await _userService.SendEmailVerificationAsync(model.Email);
+						if (emailSent)
 						{
 							return Ok(new UserManagerResponse
 							{
-								Messege = "Registration successful! OTP has been sent to your email.",
+								Messege = "Registration successful! Check your Email for Verification Link",
 								IsSuccess = true
 							});
 						}
@@ -157,12 +159,12 @@ namespace IdealTrip.Controllers
 					if (result.IsSuccess)
 					{
 						// Send OTP to user's email
-						var otpSent = await _userService.SendOtpAsync(model.Email);
-						if (otpSent)
+						var emailSent = await _userService.SendEmailVerificationAsync(model.Email);
+						if (emailSent)
 						{
 							return Ok(new UserManagerResponse
 							{
-								Messege = "Registration successful! OTP has been sent to your email.",
+								Messege = "Registration successful! Check your Email for Verification Link",
 								IsSuccess = true
 							});
 						}
@@ -200,12 +202,12 @@ namespace IdealTrip.Controllers
 					if (result.IsSuccess)
 					{
 						// Send OTP to user's email
-						var otpSent = await _userService.SendOtpAsync(model.Email);
-						if (otpSent)
+						var emailSent = await _userService.SendEmailVerificationAsync(model.Email);
+						if (emailSent)
 						{
 							return Ok(new UserManagerResponse
 							{
-								Messege = "Registration successful! OTP has been sent to your email.",
+								Messege = "Registration successful! Check your Email for Verification Link",
 								IsSuccess = true
 							});
 						}
@@ -231,41 +233,8 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-
-		[HttpPost("verify-otp")]
-		public async Task<ActionResult<UserManagerResponse>> VerifyOtp([FromBody] VerifyOTPModel model)
-		{
-			try
-			{
-				if (ModelState.IsValid)
-				{
-					var isOtpValid = await _userService.VerifyOtp(model.email, model.Otp);
-					if (isOtpValid)
-					{
-						return Ok(new UserManagerResponse
-						{
-							Messege = "OTP verified successfully!",
-							IsSuccess = true
-						});
-					}
-
-					return BadRequest(new UserManagerResponse
-					{
-						Messege = "Invalid or expired OTP. Please try again.",
-						IsSuccess = false
-					});
-				}
-				return BadRequest(new UserManagerResponse { Messege = "Invalid request properties.", IsSuccess = false });
-			}
-			catch (Exception ex)
-			{
-				return StatusCode(500, new UserManagerResponse
-				{
-					Messege = "Unable to verify OTP. Please try again later.",
-					IsSuccess = false
-				});
-			}
-		}
+		#endregion
+		#region Login
 
 		[HttpPost("login")]
 		public async Task<IActionResult> LoginAsync([FromBody] LoginModel model)
@@ -331,45 +300,8 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-
-		[HttpPost("resend-otp")]
-		public async Task<IActionResult> ResendOtp([FromBody] ResendOtpModel model)
-		{
-			try
-			{
-				if (ModelState.IsValid)
-				{
-					var otpSent = await _userService.SendOtpAsync(model.email);
-					if (otpSent)
-					{
-						return Ok(new UserManagerResponse
-						{
-							Messege = "OTP has been resent to your email.",
-							IsSuccess = true
-						});
-					}
-					return BadRequest(new UserManagerResponse
-					{
-						Messege = "Unable to resend OTP. Please try again.",
-						IsSuccess = false
-					});
-				}
-				return BadRequest(new UserManagerResponse
-				{
-					Messege = "Invalid request properties.",
-					IsSuccess = false
-				});
-			}
-			catch (Exception ex)
-			{
-				return StatusCode(500, new UserManagerResponse
-				{
-					Messege = "Unable to resend OTP. Please try again later.",
-					IsSuccess = false
-				});
-			}
-		}
-
+	#endregion
+		#region Password Management
 		[HttpPost("forgot-password")]
 		public async Task<IActionResult> ForgotPassword([FromBody] ForgetPasswordModel model)
 		{
@@ -377,8 +309,8 @@ namespace IdealTrip.Controllers
 			{
 				if (ModelState.IsValid)
 				{
-					var result = await _userService.ForgotPasswordAsync(model.EmailAddress);
-					if (result.IsSuccess)
+					var result = await _userService.SendPasswordResetLinkAsync(model.EmailAddress);
+					if (result)
 					{
 						return Ok(new UserManagerResponse
 						{
@@ -405,30 +337,56 @@ namespace IdealTrip.Controllers
 		}
 
 		[HttpPost("reset-password")]
-		public async Task<ActionResult<UserManagerResponse>> ResetPassword([FromBody] ResetPasswordModel model)
+		public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordModel model)
+		{
+			if (ModelState.IsValid)
+			{
+				var result = await _userService.ResetPasswordAsync(model);
+				if (result.IsSuccess)
+				{
+					return Ok(result);
+				}
+				return BadRequest(result);
+			}
+
+			return BadRequest(new UserManagerResponse
+			{
+				Messege = "Invalid request properties.",
+				IsSuccess = false
+			});
+		}
+		#endregion
+		[HttpGet("confirm-email")]
+		public async Task<IActionResult> ConfirmEmail(string userId, string token)
+		{
+			var result = await _userService.ConfirmEmail(userId, token);
+			if (result.IsSuccess)
+			{
+				return Ok(result);
+			}
+			return BadRequest(result);
+		}
+		[HttpPost("resend-registration-link")]
+		public async Task<IActionResult> ResendRegistrationLink([FromBody] ResendLinkModel model)
 		{
 			try
 			{
 				if (ModelState.IsValid)
 				{
-					if(model.NewPassword != model.ConfirmPassword)
-					{
-						return new UserManagerResponse
-						{
-							Messege = "New password and confirm password mismatch",
-							IsSuccess = false
-						};
-					}
-					var result = await _userService.ResetPasswordAsync(model.Email,model.Token,model.NewPassword);
-					if (result.IsSuccess)
+					var emailSent = await _userService.SendEmailVerificationAsync(model.email);
+					if (emailSent)
 					{
 						return Ok(new UserManagerResponse
 						{
-							Messege = "Password reset successfully.",
+							Messege = "Link has been resent to your email.",
 							IsSuccess = true
 						});
 					}
-					return BadRequest(result);
+					return BadRequest(new UserManagerResponse
+					{
+						Messege = "Unable to resend Link. Please try again.",
+						IsSuccess = false
+					});
 				}
 				return BadRequest(new UserManagerResponse
 				{
@@ -440,13 +398,49 @@ namespace IdealTrip.Controllers
 			{
 				return StatusCode(500, new UserManagerResponse
 				{
-					Messege = "Unable to process your request. Please try again later.",
+					Messege = "Unable to resend Link. Please try again later.",
+					IsSuccess = false
+				});
+			}
+		}
+		[HttpPost("resend-reset-password-link")]
+		public async Task<IActionResult> ResendResetPasswordLink([FromBody] ResendLinkModel model)
+		{
+			try
+			{
+				if (ModelState.IsValid)
+				{
+					var emailSent = await _userService.SendPasswordResetLinkAsync(model.email);
+					if (emailSent)
+					{
+						return Ok(new UserManagerResponse
+						{
+							Messege = "Link has been resent to your email.",
+							IsSuccess = true
+						});
+					}
+					return BadRequest(new UserManagerResponse
+					{
+						Messege = "Unable to resend Link. Please try again.",
+						IsSuccess = false
+					});
+				}
+				return BadRequest(new UserManagerResponse
+				{
+					Messege = "Invalid request properties.",
+					IsSuccess = false
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new UserManagerResponse
+				{
+					Messege = "Unable to resend Link. Please try again later.",
 					IsSuccess = false
 				});
 			}
 		}
 
 
-		
 	}
 }

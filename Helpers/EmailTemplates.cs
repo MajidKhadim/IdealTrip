@@ -2,7 +2,7 @@
 {
 	public static class EmailTemplates
 	{
-		public static string ForgetPasswordEmailTemplate(string userFullName, string otp)
+		public static string ForgetPasswordEmailTemplate(string userFullName, string resetLink)
 		{
 			return $@"
 <!DOCTYPE html>
@@ -43,46 +43,38 @@
             color: #333333;
             font-size: 15px;
         }}
-        .otp-box {{
-            margin: 20px auto;
-            padding: 15px;
-            text-align: center;
-            background-color: #f2f4f7;
-            border-radius: 5px;
-            font-size: 24px;
-            font-weight: bold;
-            color: #0078d7;
-        }}
         .email-footer {{
-            text-align: center;
             font-size: 12px;
             color: #777777;
             margin-top: 20px;
             padding-top: 10px;
             border-top: 1px solid #dddddd;
+            text-align: left;
         }}
         .email-regards {{
             margin-top: 20px;
-            padding: 10px;
             font-size: 14px;
             font-weight: bold;
             color: #333333;
-            text-align: center;
+            text-align: left;
+        }}
+        .reset-link {{
+            color: #0078d7;
+            text-decoration: none;
+            font-weight: bold;
         }}
     </style>
 </head>
 <body>
     <div class='email-container'>
         <div class='email-header'>
-            <h1>Forget Password Request</h1>
+            <h1>Password Reset Request</h1>
         </div>
         <div class='email-content'>
             <p>Hello {userFullName},</p>
-            <p>You requested a password reset for your account.</p>
-            <p>Your One-Time Password (OTP) for password verification is:</p>
-            <div class='otp-box'>{otp}</div>
-            <p>This OTP is valid for 5 minutes. Please use it promptly to reset your password.</p>
-            <p>If you did not request this, please ignore this email.</p>
+            <p>You requested a password reset for your account. Click the link below to reset your password:</p>
+            <p><a href='{resetLink}' class='reset-link'>Reset Your Password</a></p>
+            <p>If you did not request this, please ignore this email. This link will expire in 5 minutes.</p>
         </div>
         <div class='email-regards'>
             <p>Regards,</p>
@@ -97,7 +89,7 @@
 </html>";
 		}
 
-		public static string OtpEmailTemplate(string otp)
+		public static string EmailVerificationTemplate(string userFullName, string verificationLink)
 		{
 			return $@"
 <!DOCTYPE html>
@@ -138,43 +130,38 @@
             color: #333333;
             font-size: 15px;
         }}
-        .otp-box {{
-            margin: 20px auto;
-            padding: 15px;
-            text-align: center;
-            background-color: #f2f4f7;
-            border-radius: 5px;
-            font-size: 24px;
-            font-weight: bold;
-            color: #0078d7;
-        }}
         .email-footer {{
-            text-align: center;
             font-size: 12px;
             color: #777777;
             margin-top: 20px;
             padding-top: 10px;
             border-top: 1px solid #dddddd;
+            text-align: left;
         }}
         .email-regards {{
             margin-top: 20px;
-            padding: 10px;
             font-size: 14px;
             font-weight: bold;
             color: #333333;
-            text-align: center;
+            text-align: left;
+        }}
+        .verification-link {{
+            color: #0078d7;
+            text-decoration: none;
+            font-weight: bold;
         }}
     </style>
 </head>
 <body>
     <div class='email-container'>
         <div class='email-header'>
-            <h1>Welcome to IdealTrip!</h1>
+            <h1>Email Verification</h1>
         </div>
         <div class='email-content'>
-            <p>Your One-Time Password (OTP) for account verification is:</p>
-            <div class='otp-box'>{otp}</div>
-            <p>This OTP is valid for 5 minutes. Please use it promptly to complete your action.</p>
+            <p>Hello {userFullName},</p>
+            <p>Welcome to IdealTrip! To verify your email address, click the link below:</p>
+            <p><a href='{verificationLink}' class='verification-link'>Verify Your Email</a></p>
+            <p>If you did not sign up for this account, please ignore this email.</p>
         </div>
         <div class='email-regards'>
             <p>Regards,</p>

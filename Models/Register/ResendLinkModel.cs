@@ -2,7 +2,7 @@
 
 namespace IdealTrip.Models.Register
 {
-	public class ResendOtpModel
+	public class ResendLinkModel
 	{
 		[Required]
 		[EmailAddress]
