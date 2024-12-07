@@ -3,8 +3,11 @@ using IdealTrip.Models;
 using IdealTrip.Models.Login;
 using IdealTrip.Models.Register;
 using IdealTrip.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace IdealTrip.Controllers
 {
@@ -413,44 +416,38 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-		//[HttpPost("resend-reset-password-link")]
-		//public async Task<IActionResult> ResendResetPasswordLink([FromBody] ResendLinkModel model)
-		//{
-		//	try
-		//	{
-		//		if (ModelState.IsValid)
-		//		{
-		//			var emailSent = await _userService.SendPasswordResetLinkAsync(model.email);
-		//			if (emailSent)
-		//			{
-		//				return Ok(new UserManagerResponse
-		//				{
-		//					Messege = "Link has been resent to your email.",
-		//					IsSuccess = true
-		//				});
-		//			}
-		//			return BadRequest(new UserManagerResponse
-		//			{
-		//				Messege = "Unable to resend Link. Please try again.",
-		//				IsSuccess = false
-		//			});
-		//		}
-		//		return BadRequest(new UserManagerResponse
-		//		{
-		//			Messege = "Invalid request properties.",
-		//			IsSuccess = false
-		//		});
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		return StatusCode(500, new UserManagerResponse
-		//		{
-		//			Messege = "Unable to resend Link. Please try again later.",
-		//			IsSuccess = false
-		//		});
-		//	}
-		//}
+		[HttpGet]
+		[Authorize] // This ensures the user must be authenticated
+		public IActionResult GetUserDetails()
+		{
+			// Extract the token from the Authorization header
+			var token = Request.Headers.Authorization.ToString().Replace("Bearer ", string.Empty);
 
+			if (string.IsNullOrEmpty(token))
+			{
+				return Unauthorized("Token is missing.");
+			}
+
+			try
+			{
+				var jwtHandler = new JwtSecurityTokenHandler();
+				var jwtToken = jwtHandler.ReadJwtToken(token);
+
+				// Extract user details (sub, email, role) from the token
+				var userId = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
+				var email = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email)?.Value;
+				var role = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+
+				// In a real application, you'd get this from a database or other service
+				var user = _userService.GetUserInfo(userId);
+
+				return Ok(user); // Return the user object as the response
+			}
+			catch (Exception ex)
+			{
+				return Unauthorized("Invalid token.");
+			}
+		}
 
 	}
 }

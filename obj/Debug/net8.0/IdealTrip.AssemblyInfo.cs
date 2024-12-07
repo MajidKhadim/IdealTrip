@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("IdealTrip")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f877d1b281232b18ac2409d2f5c9cdec49b78cae")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e55a9cc289c13154596c4a933f9192a43469da5c")]
 [assembly: System.Reflection.AssemblyProductAttribute("IdealTrip")]
 [assembly: System.Reflection.AssemblyTitleAttribute("IdealTrip")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -39,6 +39,17 @@ builder.Services.AddAuthentication(options =>
 		IssuerSigningKey = new SymmetricSecurityKey(key),
 		RoleClaimType = ClaimTypes.Role
 	};
+	options.Events = new JwtBearerEvents
+	{
+		OnAuthenticationFailed = context =>
+		{
+			if (context.Exception is SecurityTokenExpiredException)
+			{
+				context.Response.Headers.Add("Token-Expired", "true");
+			}
+			return Task.CompletedTask;
+		}
+	};
 });
 // Add services to the container.
 builder.Services.AddControllers();
@@ -68,15 +79,6 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
-
-builder.Services.AddAuthorization(options =>
-{
-	options.AddPolicy("Admin", policy =>
-	{
-		policy.RequireRole("Admin"); // Ensure only users with the "Admin" role can access
-	});
-});
-
 
 var app = builder.Build();
 

@@ -186,9 +186,14 @@
     "Order": 0,
     "Parameters": [
       {
-        "Name": "model",
-        "Type": "IdealTrip.Models.Login.LoginModel",
-        "IsRequired": true
+        "Name": "Email",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Password",
+        "Type": "System.String",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []

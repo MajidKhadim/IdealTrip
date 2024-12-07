@@ -1,8 +1,10 @@
-﻿using IdealTrip.Helpers;
+﻿using Azure.Core;
+using IdealTrip.Helpers;
 using IdealTrip.Models;
 using IdealTrip.Models.Enums;
 using IdealTrip.Models.Login;
 using IdealTrip.Models.Register;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Concurrent;
@@ -18,15 +20,11 @@ namespace IdealTrip.Services
 		Task<UserManagerResponse> RegisterTourGuideAsync(RegisterTourGuideModel model, string role);
 		Task<UserManagerResponse> RegisterHotelOwnerAsync(RegisterHotelOwnerModel model, string role);
 		Task<UserManagerResponse> LoginUserAsync(LoginModel model);
-		//Task<bool> SendOtpAsync(string email);
-		//Task<bool> VerifyOtp(string email, string otp);
 		Task<UserManagerResponse> DeleteUser(string userEmail);
-
-		//Task<UserManagerResponse> ForgotPasswordAsync(string email);
-		//public Task<bool> SendPasswordResetLinkAsync(string email);
 		Task<UserManagerResponse> ResetPasswordAsync(ResetPasswordModel model);
 
 		Task<bool> IsAdmin(string email);
+		Task<UserInfoModel> GetUserInfo(string userId);
 
 		Task<UserManagerResponse> ConfirmEmail(string userId,string token);
 		public Task<bool> SendEmailVerificationAsync(string email);
@@ -648,7 +646,7 @@ namespace IdealTrip.Services
 				return new UserManagerResponse { IsSuccess = false, Messege = "Invalid password." };
 
 
-			var token = _JwtHelper.GenerateToken(user.Id.ToString(), user.Email, user.Role);
+			var token = _JwtHelper.GenerateToken(user.Id.ToString(), model.Email, user.Role);
 
 			return new UserManagerResponse
 			{
@@ -864,7 +862,20 @@ namespace IdealTrip.Services
 				? new UserManagerResponse { IsSuccess = true, Messege = "User deleted successfully." }
 				: new UserManagerResponse { IsSuccess = false, Messege = "Error deleting user." };
 		}
+
+		public async Task<UserInfoModel> GetUserInfo(string userId)
+		{
+			var user = await _userManager.FindByIdAsync(userId);
+			return new UserInfoModel
+			{
+				UserId = user.Id.ToString(),
+				Email = user.Email,
+				UserName = user.UserName,
+				Role = user.Role,
+			};
+		}
 		#endregion
+
 	}
 
 	public class FileSaveResult

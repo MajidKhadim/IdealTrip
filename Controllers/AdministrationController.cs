@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace IdealTrip.Controllers
 {
 	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-	[Authorize("Admin")]
+	[Authorize(Roles ="Admin")]
 	[Route("api/[controller]")]
 	public class AdministrationController : Controller
 	{
