@@ -4,6 +4,10 @@
 # Ignore build and output files
 bin/
 obj/
+/bin/
+/obj/
+/publish/
+/wwwroot/
 
 # Ignore user-specific files
 *.user
