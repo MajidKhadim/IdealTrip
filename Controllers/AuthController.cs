@@ -417,37 +417,5 @@ namespace IdealTrip.Controllers
 			}
 		}
 
-			[HttpGet("profile")]
-			public async Task<IActionResult> GetUserProfile()
-			{
-				var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // Get the user ID from the token
-
-				if (userId == null)
-				{
-					return Unauthorized(new UserManagerResponse
-					{
-						IsSuccess = false,
-						Messege = "User ID is missing from the token."
-					});
-				}
-
-			var userInfo = _userService.GetUserInfo(userId);  // Retrieve user profile from database
-				if (userInfo == null)
-				{
-				return NotFound(new UserManagerResponse
-				{
-					IsSuccess = false,
-					Messege = "User ID is missing from the token."
-				});
-			}
-
-				return Ok(new UserManagerResponse
-				{
-					IsSuccess = false,
-					Messege = "User ID is missing from the token.",
-					Data = userInfo
-				}); // Return the user profile data (including profile photo URL)
-			}
-
 	}
 }

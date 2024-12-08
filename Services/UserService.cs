@@ -23,10 +23,11 @@ namespace IdealTrip.Services
 		Task<UserManagerResponse> RegisterHotelOwnerAsync(RegisterHotelOwnerModel model, string role);
 		Task<UserManagerResponse> LoginUserAsync(LoginModel model);
 		Task<UserManagerResponse> DeleteUser(string userEmail);
+		Task<UserManagerResponse> UpdateUser(UpdateUserModel model,string Id);
 		Task<UserManagerResponse> ResetPasswordAsync(ResetPasswordModel model);
 
 		Task<bool> IsAdmin(string email);
-		Task<UserInfoModel> GetUserInfo(string userId);
+		Task<UserManagerResponse> GetUserInfo(string userId);
 
 		Task<UserManagerResponse> ConfirmEmail(string userId,string token);
 		public Task<bool> SendEmailVerificationAsync(string email);
@@ -527,7 +528,7 @@ namespace IdealTrip.Services
 					return new UserManagerResponse
 					{
 						IsSuccess = false,
-						Messege = "User registration failed",
+						Messege = "User Name already Exist Try Changing UserName",
 						Errors = result.Errors.Select(e => e.Description)
 					};
 				}
@@ -886,18 +887,41 @@ namespace IdealTrip.Services
 				: new UserManagerResponse { IsSuccess = false, Messege = "Error deleting user." };
 		}
 
-		public async Task<UserInfoModel> GetUserInfo(string userId)
+		public async Task<UserManagerResponse> GetUserInfo(string userId)
 		{
-			var user = await _userManager.FindByIdAsync(userId);
-			if (user == null)
-				return null;
-			return new UserInfoModel
+			try
 			{
-				Email = user.Email,
-				UserName = user.UserName,
-				Address = user.Address,
-				ProfilePhotoUrl = user.ProfilePhotoPath
-			};
+				var user = await _userManager.FindByIdAsync(userId);
+
+				if (user == null)
+					return new UserManagerResponse
+					{
+						IsSuccess = false,
+						Messege = "User Not Found"
+					};
+
+				return new UserManagerResponse
+				{
+					IsSuccess = true,
+					Messege = "User retrived Successfully",
+					Data = new
+					{
+						Email = user.Email,
+						UserName = user.UserName,
+						Address = user.Address,
+						ProfilePhotoUrl = user.ProfilePhotoPath
+					}
+				};
+			}
+			catch (Exception ex)
+			{
+				// Log the exception (if applicable)
+				return new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = ex.Message
+				};
+			}
 		}
 		#endregion
 

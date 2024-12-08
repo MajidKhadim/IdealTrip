@@ -253,16 +253,6 @@
   },
   {
     "ContainingType": "IdealTrip.Controllers.AuthController",
-    "Method": "GetUserProfile",
-    "RelativePath": "api/Auth/profile",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "IdealTrip.Controllers.AuthController",
     "Method": "RegisterHotelOwner",
     "RelativePath": "api/Auth/register/hotelowner",
     "HttpMethod": "POST",
@@ -558,6 +548,43 @@
       {
         "Name": "model",
         "Type": "IdealTrip.Models.Login.ResetPasswordModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "IdealTrip.Controllers.UserController",
+    "Method": "UpdateUser",
+    "RelativePath": "api/User/{id}",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.String",
+        "IsRequired": true
+      },
+      {
+        "Name": "model",
+        "Type": "IdealTrip.Models.UpdateUserModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "IdealTrip.Controllers.UserController",
+    "Method": "GetUserProfile",
+    "RelativePath": "api/User/{userId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "userId",
+        "Type": "System.String",
         "IsRequired": true
       }
     ],
