@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "iprAFAyisyvCO95Ow2LARoa0T38ndX/8jhbN5TCdEuY=",
+  "Hash": "weu8bbXvcDIC0wjo5nnPHbLlShrIJSjqEWodZvM1w7g=",
   "Source": "IdealTrip",
   "BasePath": "_content/IdealTrip",
   "Mode": "Default",
@@ -15,5 +15,25 @@
       "Pattern": "**"
     }
   ],
-  "Assets": []
+  "Assets": [
+    {
+      "Identity": "C:\\Users\\PMLS\\Desktop\\FYP\\IdealTrip-Backend\\IdealTrip\\wwwroot\\profilephotos\\4508bf37-84d4-4e16-9656-08dd16ad0442\\1dc7fc6b-83fd-4272-b892-f4231a81b1ae_pexels-sebastiaan-stam-1097456.jpg",
+      "SourceId": "IdealTrip",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\PMLS\\Desktop\\FYP\\IdealTrip-Backend\\IdealTrip\\wwwroot\\",
+      "BasePath": "_content/IdealTrip",
+      "RelativePath": "profilephotos/4508bf37-84d4-4e16-9656-08dd16ad0442/1dc7fc6b-83fd-4272-b892-f4231a81b1ae_pexels-sebastiaan-stam-1097456.jpg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\profilephotos\\4508bf37-84d4-4e16-9656-08dd16ad0442\\1dc7fc6b-83fd-4272-b892-f4231a81b1ae_pexels-sebastiaan-stam-1097456.jpg"
+    }
+  ]
 }

@@ -6,5 +6,7 @@
 		public bool IsSuccess { get; set; }
 		public IEnumerable<string> Errors { get; set; }
 		public DateTime? Expiry {  get; set; }
+
+		public object Data { get; set; }
 	}
 }

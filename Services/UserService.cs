@@ -641,7 +641,8 @@ namespace IdealTrip.Services
 
 			if (!await _userManager.IsEmailConfirmedAsync(user))
 				return new UserManagerResponse { IsSuccess = false, Messege = "Email not confirmed." };
-
+			if (user.Status == ProofStatus.Pending)
+				return new UserManagerResponse { IsSuccess = false, Messege = "Your Info has been sent to Admin.. After the approval you will get an email.. Then You can login!" };
 			if (!await _userManager.CheckPasswordAsync(user, model.Password))
 				return new UserManagerResponse { IsSuccess = false, Messege = "Invalid password." };
 
@@ -652,7 +653,14 @@ namespace IdealTrip.Services
 			{
 				IsSuccess = true,
 				Messege = new JwtSecurityTokenHandler().WriteToken(token),
-				Expiry = token.ValidTo
+				Expiry = token.ValidTo,
+				Data = new
+				{
+					userId = user.Id,
+					email = user.Email,
+					userName = user.UserName,
+					role = user.Role
+				}
 			};
 		}
 
@@ -866,12 +874,14 @@ namespace IdealTrip.Services
 		public async Task<UserInfoModel> GetUserInfo(string userId)
 		{
 			var user = await _userManager.FindByIdAsync(userId);
+			if (user == null)
+				return null;
 			return new UserInfoModel
 			{
-				UserId = user.Id.ToString(),
 				Email = user.Email,
 				UserName = user.UserName,
-				Role = user.Role,
+				Address = user.Address,
+				ProfilePhotoUrl = user.ProfilePhotoPath
 			};
 		}
 		#endregion

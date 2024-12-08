@@ -416,38 +416,38 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-		[HttpGet]
-		[Authorize] // This ensures the user must be authenticated
-		public IActionResult GetUserDetails()
-		{
-			// Extract the token from the Authorization header
-			var token = Request.Headers.Authorization.ToString().Replace("Bearer ", string.Empty);
 
-			if (string.IsNullOrEmpty(token))
+			[HttpGet("profile")]
+			public async Task<IActionResult> GetUserProfile()
 			{
-				return Unauthorized("Token is missing.");
+				var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // Get the user ID from the token
+
+				if (userId == null)
+				{
+					return Unauthorized(new UserManagerResponse
+					{
+						IsSuccess = false,
+						Messege = "User ID is missing from the token."
+					});
+				}
+
+			var userInfo = _userService.GetUserInfo(userId);  // Retrieve user profile from database
+				if (userInfo == null)
+				{
+				return NotFound(new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = "User ID is missing from the token."
+				});
 			}
 
-			try
-			{
-				var jwtHandler = new JwtSecurityTokenHandler();
-				var jwtToken = jwtHandler.ReadJwtToken(token);
-
-				// Extract user details (sub, email, role) from the token
-				var userId = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
-				var email = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email)?.Value;
-				var role = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
-
-				// In a real application, you'd get this from a database or other service
-				var user = _userService.GetUserInfo(userId);
-
-				return Ok(user); // Return the user object as the response
+				return Ok(new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = "User ID is missing from the token.",
+					Data = userInfo
+				}); // Return the user profile data (including profile photo URL)
 			}
-			catch (Exception ex)
-			{
-				return Unauthorized("Invalid token.");
-			}
-		}
 
 	}
 }

@@ -253,6 +253,16 @@
   },
   {
     "ContainingType": "IdealTrip.Controllers.AuthController",
+    "Method": "GetUserProfile",
+    "RelativePath": "api/Auth/profile",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "IdealTrip.Controllers.AuthController",
     "Method": "RegisterHotelOwner",
     "RelativePath": "api/Auth/register/hotelowner",
     "HttpMethod": "POST",
