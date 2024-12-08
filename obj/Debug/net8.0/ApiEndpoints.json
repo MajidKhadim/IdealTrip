@@ -484,7 +484,7 @@
         "IsRequired": false
       },
       {
-        "Name": "VehicleRegistrationForm",
+        "Name": "VehicleRegistrationDoc",
         "Type": "Microsoft.AspNetCore.Http.IFormFile",
         "IsRequired": false
       },

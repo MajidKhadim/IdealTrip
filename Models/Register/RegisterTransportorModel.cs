@@ -8,7 +8,7 @@ namespace IdealTrip.Models.Register
 		[Required]
 		public string VehicleDetails { get; set; }
 		[Required]
-		public IFormFile VehicleRegistrationForm {  get; set; }
+		public IFormFile VehicleRegistrationDoc {  get; set; }
 		[Required]
 		public IFormFile DriverLicense { get ; set; }
 	}

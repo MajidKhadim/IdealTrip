@@ -9,6 +9,9 @@ using System;
 using System.Text;
 using DotNetEnv;
 using System.Security.Claims;
+using Azure.Storage.Blobs;
+using Microsoft.Extensions.Configuration;
+using System.Net.NetworkInformation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,6 +62,10 @@ builder.Services.AddCors(options => options.AddPolicy("AllowAnyOrigin",
 	builder => builder.AllowAnyOrigin()
 	.AllowAnyHeader()
 	.AllowAnyMethod()));
+string azureBlobStorageConnectionString = builder.Configuration["AzureBlobStorage:ConnectionString"];
+
+// Register the BlobServiceClient with the connection string
+builder.Services.AddSingleton(x => new BlobServiceClient(azureBlobStorageConnectionString));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

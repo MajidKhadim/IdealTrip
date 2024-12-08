@@ -1,4 +1,6 @@
 ﻿using Azure.Core;
+using Azure.Storage.Blobs.Models;
+using Azure.Storage.Blobs;
 using IdealTrip.Helpers;
 using IdealTrip.Models;
 using IdealTrip.Models.Enums;
@@ -38,6 +40,9 @@ namespace IdealTrip.Services
 		private readonly IConfiguration _config;
 		private readonly ILogger<UserService> _logger;
 		public readonly JwtHelper _JwtHelper;
+		private readonly BlobServiceClient _blobServiceClient;
+		private readonly string _profilePhotoContainerName = "profilepictures";
+		private readonly string _proofContainerName = "proofs";
 
 		public UserService(
 			UserManager<ApplicationUser> userManager,
@@ -45,7 +50,8 @@ namespace IdealTrip.Services
 			EmailService emailService,
 			IConfiguration config,
 			ILogger<UserService> logger,
-			JwtHelper jwtHelper)
+			JwtHelper jwtHelper,
+			BlobServiceClient blobServiceClient)
 		{
 			_userManager = userManager;
 			_context = context;
@@ -53,6 +59,7 @@ namespace IdealTrip.Services
 			_config = config;
 			_logger = logger;
 			_JwtHelper = jwtHelper;
+			_blobServiceClient = blobServiceClient;
 		}
 
 		#region Registration
@@ -120,8 +127,8 @@ namespace IdealTrip.Services
 				}
 
 				// Save proofs
-				if (model.VehicleRegistrationForm != null)
-					await SaveProof(user.Id, "Vehicle Registration", model.VehicleRegistrationForm);
+				if (model.VehicleRegistrationDoc != null)
+					await SaveProof(user.Id, "Vehicle Registration", model.VehicleRegistrationDoc);
 
 				if (model.DriverLicense != null)
 					await SaveProof(user.Id, "Driver License", model.DriverLicense);
@@ -777,23 +784,31 @@ namespace IdealTrip.Services
 				if (file.Length > maxFileSize)
 					return new FileSaveResult { IsSuccess = false, Messege = "File size exceeds limit." };
 
-				var userDir = Path.Combine("wwwroot", directory, userId.ToString());
-				Directory.CreateDirectory(userDir);
+				// Get the blob container client
+				var containerName = directory == "proofs" ? _proofContainerName : _profilePhotoContainerName;
+				var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
 
+				// Create the container if it doesn't exist
+				await containerClient.CreateIfNotExistsAsync();
+
+				// Generate a unique blob name
 				var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
-				var fullPath = Path.Combine(userDir, fileName);
+				var blobClient = containerClient.GetBlobClient(fileName);
 
-				using (var stream = new FileStream(fullPath, FileMode.Create))
+				// Upload the file to Blob Storage
+				using (var stream = file.OpenReadStream())
 				{
-					await file.CopyToAsync(stream);
+					await blobClient.UploadAsync(stream, new BlobHttpHeaders { ContentType = file.ContentType });
 				}
 
-				return new FileSaveResult { IsSuccess = true, Path = Path.Combine(directory, userId.ToString(), fileName).Replace("\\", "/") };
+				// Return the blob URL
+				var blobUrl = blobClient.Uri.ToString();
+				return new FileSaveResult { IsSuccess = true, Path = blobUrl };
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, "Error saving file for directory: {Directory}", directory);
-				return new FileSaveResult { IsSuccess = false, Messege = "An error occurred while saving the file." };
+				_logger.LogError(ex, "Error saving file to Blob Storage.");
+				return new FileSaveResult { IsSuccess = false, Messege = "An error occurred while saving the file to Blob Storage." };
 			}
 		}
 		#endregion

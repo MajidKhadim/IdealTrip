@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IdealTrip.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241128070021_AddedAddressField")]
-    partial class AddedAddressField
+    [Migration("20241208063959_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

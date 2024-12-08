@@ -357,3 +357,6 @@ C:\Users\PMLS\Desktop\FYP\IdealTrip-Backend\IdealTrip\bin\Debug\net8.0\Microsoft
 C:\Users\PMLS\Desktop\FYP\IdealTrip-Backend\IdealTrip\bin\Debug\net8.0\Microsoft.Extensions.Logging.Configuration.dll
 C:\Users\PMLS\Desktop\FYP\IdealTrip-Backend\IdealTrip\bin\Debug\net8.0\Microsoft.Extensions.Logging.Console.dll
 C:\Users\PMLS\Desktop\FYP\IdealTrip-Backend\IdealTrip\bin\Debug\net8.0\Microsoft.Extensions.Options.ConfigurationExtensions.dll
+C:\Users\PMLS\Desktop\FYP\IdealTrip-Backend\IdealTrip\bin\Debug\net8.0\Azure.Storage.Blobs.dll
+C:\Users\PMLS\Desktop\FYP\IdealTrip-Backend\IdealTrip\bin\Debug\net8.0\Azure.Storage.Common.dll
+C:\Users\PMLS\Desktop\FYP\IdealTrip-Backend\IdealTrip\bin\Debug\net8.0\System.IO.Hashing.dll

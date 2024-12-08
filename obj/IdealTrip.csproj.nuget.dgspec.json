@@ -97,6 +97,10 @@
             "System.IdentityModel.Tokens.Jwt": {
               "target": "Package",
               "version": "[8.2.1, )"
+            },
+            "azure.storage.blobs": {
+              "target": "Package",
+              "version": "[12.23.0, )"
             }
           },
           "imports": [
