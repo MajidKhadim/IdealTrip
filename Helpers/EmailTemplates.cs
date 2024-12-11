@@ -175,5 +175,178 @@
 </body>
 </html>";
 		}
+		public static string AccountApprovedTemplate(string userFullName, string loginLink)
+		{
+			return $@"
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }}
+        .email-container {{
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            padding: 20px;
+            border: 1px solid #dddddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }}
+        .email-header {{
+            text-align: center;
+            background-color: #0078d7;
+            color: #ffffff;
+            padding: 15px 10px;
+            border-radius: 8px 8px 0 0;
+        }}
+        .email-header h1 {{
+            margin: 0;
+            font-size: 20px;
+        }}
+        .email-content {{
+            padding: 20px;
+            color: #333333;
+            font-size: 15px;
+        }}
+        .email-footer {{
+            font-size: 12px;
+            color: #777777;
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #dddddd;
+            text-align: left;
+        }}
+        .email-regards {{
+            margin-top: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #333333;
+            text-align: left;
+        }}
+        .login-link {{
+            color: #0078d7;
+            text-decoration: none;
+            font-weight: bold;
+        }}
+    </style>
+</head>
+<body>
+    <div class='email-container'>
+        <div class='email-header'>
+            <h1>Your Account Has Been Approved!</h1>
+        </div>
+        <div class='email-content'>
+            <p>Hello {userFullName},</p>
+            <p>We are excited to inform you that your account has been approved by our admin team! You can now log in and start using the IdealTrip application.</p>
+            <p><a href='{loginLink}' class='login-link'>Login to Your Account</a></p>
+            <p>If you have any issues, please feel free to contact us.</p>
+        </div>
+        <div class='email-regards'>
+            <p>Regards,</p>
+            <p><strong>Ideal Trip Team</strong></p>
+            <p>Make your journey with pleasure😊😊!</p>
+        </div>
+        <div class='email-footer'>
+            <p>This is an automated email. Please do not reply to this message.</p>
+        </div>
+    </div>
+</body>
+</html>";
+		}
+		public static string AccountRejectedTemplate(string userFullName, string registerLink)
+		{
+			return $@"
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }}
+        .email-container {{
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            padding: 20px;
+            border: 1px solid #dddddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }}
+        .email-header {{
+            text-align: center;
+            background-color: #e74c3c;
+            color: #ffffff;
+            padding: 15px 10px;
+            border-radius: 8px 8px 0 0;
+        }}
+        .email-header h1 {{
+            margin: 0;
+            font-size: 20px;
+        }}
+        .email-content {{
+            padding: 20px;
+            color: #333333;
+            font-size: 15px;
+        }}
+        .email-footer {{
+            font-size: 12px;
+            color: #777777;
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #dddddd;
+            text-align: left;
+        }}
+        .email-regards {{
+            margin-top: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #333333;
+            text-align: left;
+        }}
+        .register-link {{
+            color: #e74c3c;
+            text-decoration: none;
+            font-weight: bold;
+        }}
+    </style>
+</head>
+<body>
+    <div class='email-container'>
+        <div class='email-header'>
+            <h1>Account Rejected</h1>
+        </div>
+        <div class='email-content'>
+            <p>Hello {userFullName},</p>
+            <p>We regret to inform you that your account has been rejected. We encourage you to try registering again to join the IdealTrip platform.</p>
+            <p><a href='{registerLink}' class='register-link'>Register Again</a></p>
+            <p>If you believe this is a mistake or if you have any questions, please contact us.</p>
+        </div>
+        <div class='email-regards'>
+            <p>Regards,</p>
+            <p><strong>Ideal Trip Team</strong></p>
+            <p>Make your journey with pleasure😊😊!</p>
+        </div>
+        <div class='email-footer'>
+            <p>This is an automated email. Please do not reply to this message.</p>
+        </div>
+    </div>
+</body>
+</html>";
+		}
+
 	}
 }

@@ -12,6 +12,7 @@ using System.Security.Claims;
 using Azure.Storage.Blobs;
 using Microsoft.Extensions.Configuration;
 using System.Net.NetworkInformation;
+using Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,6 +63,8 @@ builder.Services.AddCors(options => options.AddPolicy("AllowAnyOrigin",
 	builder => builder.AllowAnyOrigin()
 	.AllowAnyHeader()
 	.AllowAnyMethod()));
+var stripeConfig = builder.Configuration.GetSection("Stripe");
+StripeConfiguration.ApiKey = stripeConfig["SecretKey"];
 string azureBlobStorageConnectionString = builder.Configuration["AzureBlobStorage:ConnectionString"];
 
 // Register the BlobServiceClient with the connection string

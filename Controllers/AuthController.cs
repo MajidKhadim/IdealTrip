@@ -269,7 +269,7 @@ namespace IdealTrip.Controllers
 		}
 
 		[HttpPost("admin-login")]
-		public async Task<IActionResult> AdminLogin(LoginModel model)
+		public async Task<IActionResult> AdminLogin([FromBody] LoginModel model)
 		{
 			try { 
 			if (ModelState.IsValid)

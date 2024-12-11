@@ -38,7 +38,7 @@ namespace IdealTrip.Controllers
 		}
 
 		[HttpPost("{id}")]
-		public async Task<IActionResult> UpdateUser(string id, [FromBody] UpdateUserModel model)
+		public async Task<IActionResult> UpdateUser(string id, [FromForm] UpdateUserModel model)
 		{
 			try
 			{

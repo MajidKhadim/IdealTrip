@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Concurrent;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Identity.UI.Services;
 
 namespace IdealTrip.Services
 {
@@ -31,6 +32,8 @@ namespace IdealTrip.Services
 
 		Task<UserManagerResponse> ConfirmEmail(string userId,string token);
 		public Task<bool> SendEmailVerificationAsync(string email);
+		Task<UserManagerResponse> SendAccountApprovedEmail(string email);
+		Task<UserManagerResponse> SendAccountRejectedEmail(string email);
 	}
 
 	public class UserService : IUserService
@@ -572,8 +575,9 @@ namespace IdealTrip.Services
 			{
 				token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 				var userId = user.Id.ToString();
+				var backendUrl =_config.GetValue<string>("Backend_Url");
 				// Backend API endpoint for email confirmation
-				var callbackUrl = $"https://localhost:7216/api/auth/confirm-email?token={Uri.EscapeDataString(token)}&userId={Uri.EscapeDataString(userId)}";
+				var callbackUrl = $"{backendUrl}/api/auth/confirm-email?token={Uri.EscapeDataString(token)}&userId={Uri.EscapeDataString(userId)}";
 
 				emailContent = EmailTemplates.EmailVerificationTemplate(user.FullName, callbackUrl);
 				subject = "Confirm Your Email";
@@ -583,8 +587,9 @@ namespace IdealTrip.Services
 				token = await _userManager.GeneratePasswordResetTokenAsync(user);
 				// navigate to change password page
 				var userId = user.Id.ToString();
+				var frontendUrl = _config.GetValue<string>("Front_Url");
 				// Construct the callback URL with token and userId as query parameters
-				var callbackUrl = $"http://localhost:3000/change-password?token={Uri.EscapeDataString(token)}&userId={Uri.EscapeDataString(userId)}";
+				var callbackUrl = $"{frontendUrl}/change-password?token={Uri.EscapeDataString(token)}&userId={Uri.EscapeDataString(userId)}";
 
 				emailContent = EmailTemplates.EmailVerificationTemplate(user.FullName, callbackUrl);
 				subject = "Reset Your Password";
@@ -614,15 +619,16 @@ namespace IdealTrip.Services
 			if (result.Succeeded)
 			{
 				string link;
+				var frontendUrl = _config.GetValue<string>("Front_Url");
 				var roles = await _userManager.GetRolesAsync(user);
 				if (roles.Contains("Tourist"))
 				{
-					link = "http://localhost:3000/email-verified";  // Redirect to the email verified page for tourists
+					link = $"{frontendUrl}/email-verified";  // Redirect to the email verified page for tourists
 				}
 				else
 				{
 					// If the user is not a tourist, redirect to the pending approval page
-					 link = "http://localhost:3000/account-pending-approval";  // This page informs the user that their info is sent for admin approval
+					 link = $"{frontendUrl}/account-pending-approval";  // This page informs the user that their info is sent for admin approval
 				}
 				return new UserManagerResponse
 				{
@@ -637,11 +643,83 @@ namespace IdealTrip.Services
 				Messege = "Error confirming email."
 			};
 		}
-		#endregion
 
-		#region Login
+		public async Task<UserManagerResponse> SendAccountApprovedEmail(string email)
+		{
+			var user = await _userManager.FindByEmailAsync(email);
+			if (user == null)
+			{
+				return new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = "User Not Found"
+				};
+			}
+			var frontendUrl = _config.GetValue<string>("Front_Url");
+			var subject = "Account Approved";
+			var loginLink = $"{frontendUrl}/login"; // Change this to your actual login page URL
+			string emailContent = EmailTemplates.AccountApprovedTemplate(user.FullName, loginLink);
 
-		public async Task<UserManagerResponse> LoginUserAsync(LoginModel model)
+			// Sending email
+			try
+			{
+				await _emailService.SendEmailAsync(user.Email, subject, emailContent);
+				return new UserManagerResponse
+				{
+					IsSuccess = true,
+					Messege = "Account approval email sent successfully."
+				};
+			}
+			catch (Exception ex)
+			{
+				return new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = $"Failed to send email. Error: {ex.Message}"
+				};
+			}
+		}
+
+		public async Task<UserManagerResponse> SendAccountRejectedEmail(string email)
+		{
+			var user = await _userManager.FindByEmailAsync(email);
+			if (user == null)
+			{
+				return new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = "User Not Found"
+				};
+			}
+			var frontendUrl = _config.GetValue<string>("Front_Url");
+			var subject = "Account Rejected";
+			var registerLink = $"{frontendUrl}/register"; // Change this to your actual register page URL
+			string emailContent = EmailTemplates.AccountRejectedTemplate(user.FullName, registerLink);
+
+			// Sending email
+			try
+			{
+				await _emailService.SendEmailAsync(user.Email, subject, emailContent);
+				return new UserManagerResponse
+				{
+					IsSuccess = true,
+					Messege = "Account rejection email sent successfully."
+				};
+			}
+			catch (Exception ex)
+			{
+				return new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = $"Failed to send email. Error: {ex.Message}"
+				};
+			}
+		}
+			#endregion
+
+			#region Login
+
+			public async Task<UserManagerResponse> LoginUserAsync(LoginModel model)
 		{
 			var user = await _userManager.FindByEmailAsync(model.Email);
 			if (user == null)
@@ -842,15 +920,15 @@ namespace IdealTrip.Services
 						};
 					}
 					user.ProfilePhotoPath = filePath.Path;
-					var result = await _userManager.UpdateAsync(user);
-					if (result.Succeeded)
+				}
+				var result = await _userManager.UpdateAsync(user);
+				if (result.Succeeded)
+				{
+					return new UserManagerResponse
 					{
-						return new UserManagerResponse
-						{
-							IsSuccess = true,
-							Messege = "User data updated succesfully"
-						};
-					}
+						IsSuccess = true,
+						Messege = "User data updated succesfully"
+					};
 				}
 				return new UserManagerResponse
 				{

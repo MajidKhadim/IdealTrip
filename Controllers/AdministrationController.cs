@@ -1,6 +1,7 @@
 ﻿using IdealTrip.Models;
 using IdealTrip.Models.AdminView;
 using IdealTrip.Models.Enums;
+using IdealTrip.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -19,11 +20,13 @@ namespace IdealTrip.Controllers
 	{
 		private readonly UserManager<ApplicationUser> _userManager;
 		private readonly ApplicationDbContext _context;
+		private readonly IUserService _userService;
 
-		public AdministrationController(UserManager<ApplicationUser> userManager, ApplicationDbContext context)
+		public AdministrationController(UserManager<ApplicationUser> userManager, ApplicationDbContext context,IUserService userService)
 		{
 			_userManager = userManager;
 			_context = context;
+			_userService = userService;
 		}
 
 		[HttpGet("pending-users")]
@@ -76,9 +79,9 @@ namespace IdealTrip.Controllers
 		}
 
 		[HttpPost("approve-user/{guid}")]
-		public async Task<ActionResult<DataSendingResponse>> ApproveUser(Guid guid)
+		public async Task<ActionResult<DataSendingResponse>> ApproveUser(string guid)
 		{
-			var user = await _userManager.Users.FirstOrDefaultAsync(user => user.Id == guid);
+			var user = await _userManager.Users.FirstOrDefaultAsync(user => user.Id.ToString() == guid);
 
 			if (user == null)
 			{
@@ -93,13 +96,22 @@ namespace IdealTrip.Controllers
 			user.Status = ProofStatus.Verified;
 
 			var result = await _userManager.UpdateAsync(user);
-
 			if (result.Succeeded)
 			{
+				var sent = await _userService.SendAccountApprovedEmail(user.Email);
+				if (sent.IsSuccess)
+				{
+					return Ok(new DataSendingResponse
+					{
+						IsSuccess = true,
+						Message = "User approved successfully.",
+						Data = null
+					});
+				}
 				return Ok(new DataSendingResponse
 				{
 					IsSuccess = true,
-					Message = "User approved successfully.",
+					Message = "Failed to send email",
 					Data = null
 				});
 			}
@@ -113,9 +125,9 @@ namespace IdealTrip.Controllers
 		}
 
 		[HttpPost("reject-user/{guid}")]
-		public async Task<ActionResult<DataSendingResponse>> RejectUser(Guid guid)
+		public async Task<ActionResult<DataSendingResponse>> RejectUser(string guid)
 		{
-			var user = await _userManager.Users.FirstOrDefaultAsync(user => user.Id == guid);
+			var user = await _userManager.Users.FirstOrDefaultAsync(user => user.Id.ToString() == guid);
 
 			if (user == null)
 			{
@@ -131,10 +143,20 @@ namespace IdealTrip.Controllers
 
 			if (result.Succeeded)
 			{
+				var sent = await _userService.SendAccountRejectedEmail(user.Email);
+				if (sent.IsSuccess)
+				{
+					return Ok(new DataSendingResponse
+					{
+						IsSuccess = true,
+						Message = "User rejected and removed successfully.",
+						Data = null
+					});
+				}
 				return Ok(new DataSendingResponse
 				{
 					IsSuccess = true,
-					Message = "User rejected and removed successfully.",
+					Message = "User Removed but Failed to send email",
 					Data = null
 				});
 			}
@@ -177,10 +199,10 @@ namespace IdealTrip.Controllers
 			});
 		}
 
-		[HttpPost("delete-user/{guid}")]
-		public async Task<ActionResult<DataSendingResponse>> DeleteUser(Guid guid)
+		[HttpDelete("delete-user/{guid}")]
+		public async Task<ActionResult<DataSendingResponse>> DeleteUser(string guid)
 		{
-			var user = await _userManager.FindByIdAsync(guid.ToString());
+			var user = await _userManager.FindByIdAsync(guid);
 			if (user == null)
 			{
 				return NotFound(new DataSendingResponse
@@ -244,8 +266,9 @@ namespace IdealTrip.Controllers
 		public async Task<ActionResult<DataSendingResponse>> GetLast30DaysAddedUsers()
 		{
 			var thirtyDaysAgo = DateTime.Now.AddDays(-30);
+			var sixtyDaysAgo = DateTime.Now.AddDays(-60);
 
-			var stats = await _userManager.Users
+			var currentStats = await _userManager.Users
 				.Where(u => u.CreatedAt >= thirtyDaysAgo && u.Role != "Admin")
 				.GroupBy(u => u.Role)
 				.Select(g => new
@@ -255,7 +278,25 @@ namespace IdealTrip.Controllers
 				})
 				.ToListAsync();
 
-			if (!stats.Any())
+			var previousStats = await _userManager.Users
+				.Where(u => u.CreatedAt >= sixtyDaysAgo && u.CreatedAt < thirtyDaysAgo && u.Role != "Admin")
+				.GroupBy(u => u.Role)
+				.Select(g => new
+				{
+					Role = g.Key,
+					Count = g.Count()
+				})
+				.ToListAsync();
+
+			// Merge current and previous stats
+			var mergedStats = currentStats.Select(current => new
+			{
+				Role = current.Role,
+				Count = current.Count,
+				PreviousCount = previousStats.FirstOrDefault(p => p.Role == current.Role)?.Count ?? 0
+			}).ToList();
+
+			if (!mergedStats.Any())
 			{
 				return NotFound(new DataSendingResponse
 				{
@@ -269,14 +310,16 @@ namespace IdealTrip.Controllers
 			{
 				IsSuccess = true,
 				Message = "User statistics for the last 30 days retrieved successfully.",
-				Data = stats
+				Data = mergedStats
 			});
 		}
+
 
 		[HttpGet("stats/all-time")]
 		public async Task<ActionResult<DataSendingResponse>> GetAllTimeUsers()
 		{
-			var stats = await _userManager.Users
+			// Current stats (all-time user counts)
+			var currentStats = await _userManager.Users
 				.Where(u => u.Role != "Admin")
 				.GroupBy(u => u.Role)
 				.Select(g => new
@@ -286,7 +329,28 @@ namespace IdealTrip.Controllers
 				})
 				.ToListAsync();
 
-			if (!stats.Any())
+			// Previous stats (e.g., users added until a year ago)
+			var oneYearAgo = DateTime.Now.AddYears(-1);
+			var previousStats = await _userManager.Users
+				.Where(u => u.CreatedAt <= oneYearAgo && u.Role != "Admin")
+				.GroupBy(u => u.Role)
+				.Select(g => new
+				{
+					Role = g.Key,
+					Count = g.Count()
+				})
+				.ToListAsync();
+
+			// Merge current and previous stats
+			var mergedStats = currentStats.Select(current => new
+			{
+				Role = current.Role,
+				Count = current.Count,
+				PreviousCount = previousStats.FirstOrDefault(p => p.Role == current.Role)?.Count ?? 0,
+				Change = current.Count - (previousStats.FirstOrDefault(p => p.Role == current.Role)?.Count ?? 0)
+			}).ToList();
+
+			if (!mergedStats.Any())
 			{
 				return NotFound(new DataSendingResponse
 				{
@@ -300,8 +364,9 @@ namespace IdealTrip.Controllers
 			{
 				IsSuccess = true,
 				Message = "All-time user statistics retrieved successfully.",
-				Data = stats
+				Data = mergedStats
 			});
 		}
+
 	}
 }

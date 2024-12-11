@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using IdealTrip.Models.Package_Booking;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
@@ -12,6 +13,8 @@ namespace IdealTrip.Models
             
         }
         public DbSet<Proof> Proofs { get; set; }
+		public DbSet<Package> Packages { get; set; }
+		public DbSet<UsersPackageBooking> UsersPackages { get; set; }
 		protected override void OnModelCreating(ModelBuilder builder)
 		{
 			base.OnModelCreating(builder);
