@@ -682,24 +682,15 @@ namespace IdealTrip.Services
 
 		public async Task<UserManagerResponse> SendAccountRejectedEmail(string email)
 		{
-			var user = await _userManager.FindByEmailAsync(email);
-			if (user == null)
-			{
-				return new UserManagerResponse
-				{
-					IsSuccess = false,
-					Messege = "User Not Found"
-				};
-			}
 			var frontendUrl = _config.GetValue<string>("Front_Url");
 			var subject = "Account Rejected";
 			var registerLink = $"{frontendUrl}/register"; // Change this to your actual register page URL
-			string emailContent = EmailTemplates.AccountRejectedTemplate(user.FullName, registerLink);
+			string emailContent = EmailTemplates.AccountRejectedTemplate(email, registerLink);
 
 			// Sending email
 			try
 			{
-				await _emailService.SendEmailAsync(user.Email, subject, emailContent);
+				await _emailService.SendEmailAsync(email, subject,emailContent);
 				return new UserManagerResponse
 				{
 					IsSuccess = true,
@@ -828,6 +819,68 @@ namespace IdealTrip.Services
 
 		#region Utility Methods
 
+		//private async Task SaveProof(Guid userId, string documentType, IFormFile file)
+		//{
+		//	var saveResult = await SaveFileWithValidation(userId, "proofs", file);
+		//	if (saveResult.IsSuccess)
+		//	{
+		//		_context.Proofs.Add(new Proof
+		//		{
+		//			UserId = userId,
+		//			DocumentType = documentType,
+		//			DocumentPath = saveResult.Path
+		//		});
+		//		await _context.SaveChangesAsync();
+		//	}
+		//	else
+		//	{
+		//		throw new InvalidOperationException($"Error saving {documentType}: {saveResult.Messege}");
+		//	}
+		//}
+
+		//private async Task<FileSaveResult> SaveFileWithValidation(Guid userId, string directory, IFormFile file)
+		//{
+		//	try
+		//	{
+		//		var allowedExtensions = directory == "proofs"
+		//			? new[] { ".pdf", ".jpg", ".jpeg", ".png" }
+		//			: new[] { ".jpg", ".jpeg", ".png" };
+		//		var maxFileSize = 5 * 1024 * 1024;
+
+		//		var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+		//		if (!allowedExtensions.Contains(extension))
+		//			return new FileSaveResult { IsSuccess = false, Messege = "Invalid file type." };
+
+		//		if (file.Length > maxFileSize)
+		//			return new FileSaveResult { IsSuccess = false, Messege = "File size exceeds limit." };
+
+		//		// Get the blob container client
+		//		var containerName = directory == "proofs" ? _proofContainerName : _profilePhotoContainerName;
+		//		var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
+
+		//		// Create the container if it doesn't exist
+		//		await containerClient.CreateIfNotExistsAsync();
+
+		//		// Generate a unique blob name
+		//		var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
+		//		var blobClient = containerClient.GetBlobClient(fileName);
+
+		//		// Upload the file to Blob Storage
+		//		using (var stream = file.OpenReadStream())
+		//		{
+		//			await blobClient.UploadAsync(stream, new BlobHttpHeaders { ContentType = file.ContentType });
+		//		}
+
+		//		// Return the blob URL
+		//		var blobUrl = blobClient.Uri.ToString();
+		//		return new FileSaveResult { IsSuccess = true, Path = blobUrl };
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		_logger.LogError(ex, "Error saving file to Blob Storage.");
+		//		return new FileSaveResult { IsSuccess = false, Messege = "An error occurred while saving the file to Blob Storage." };
+		//	}
+		//}
 		private async Task SaveProof(Guid userId, string documentType, IFormFile file)
 		{
 			var saveResult = await SaveFileWithValidation(userId, "proofs", file);
@@ -847,6 +900,54 @@ namespace IdealTrip.Services
 			}
 		}
 
+		//private async Task<FileSaveResult> SaveFileWithValidation(Guid userId, string directory, IFormFile file)
+		//{
+		//	try
+		//	{
+		//		var allowedExtensions = directory == "proofs"
+		//			? new[] { ".pdf", ".jpg", ".jpeg", ".png" }
+		//			: new[] { ".jpg", ".jpeg", ".png" };
+		//		var maxFileSize = 5 * 1024 * 1024; // 5 MB
+
+		//		var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+		//		if (!allowedExtensions.Contains(extension))
+		//			return new FileSaveResult { IsSuccess = false, Messege = "Invalid file type." };
+
+		//		if (file.Length > maxFileSize)
+		//			return new FileSaveResult { IsSuccess = false, Messege = "File size exceeds limit." };
+
+		//		// Define the storage path based on directory type
+		//		var rootPath = directory == "proofs"
+		//			? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "proofs", userId.ToString())
+		//			: Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", directory);
+
+		//		// Ensure the directory exists
+		//		if (!Directory.Exists(rootPath))
+		//		{
+		//			Directory.CreateDirectory(rootPath);
+		//		}
+
+		//		// Generate a unique file name
+		//		var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
+		//		var filePath = Path.Combine(rootPath, fileName);
+
+		//		// Save the file locally
+		//		using (var stream = new FileStream(filePath, FileMode.Create))
+		//		{
+		//			await file.CopyToAsync(stream);
+		//		}
+
+		//		// Return the relative path
+		//		var relativePath = Path.Combine(directory == "proofs" ? $"proofs/{userId}" : directory, fileName).Replace("\\", "/");
+		//		return new FileSaveResult { IsSuccess = true, Path = $"/{relativePath}" };
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		_logger.LogError(ex, "Error saving file to local storage.");
+		//		return new FileSaveResult { IsSuccess = false, Messege = "An error occurred while saving the file to local storage." };
+		//	}
+		//}
+
 		private async Task<FileSaveResult> SaveFileWithValidation(Guid userId, string directory, IFormFile file)
 		{
 			try
@@ -854,7 +955,7 @@ namespace IdealTrip.Services
 				var allowedExtensions = directory == "proofs"
 					? new[] { ".pdf", ".jpg", ".jpeg", ".png" }
 					: new[] { ".jpg", ".jpeg", ".png" };
-				var maxFileSize = 5 * 1024 * 1024;
+				var maxFileSize = 5 * 1024 * 1024; // 5 MB
 
 				var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 				if (!allowedExtensions.Contains(extension))
@@ -863,33 +964,41 @@ namespace IdealTrip.Services
 				if (file.Length > maxFileSize)
 					return new FileSaveResult { IsSuccess = false, Messege = "File size exceeds limit." };
 
-				// Get the blob container client
-				var containerName = directory == "proofs" ? _proofContainerName : _profilePhotoContainerName;
-				var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
+				// Define the storage path based on directory type
+				var rootPath = directory == "proofs"
+					? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "proofs", userId.ToString())
+					: Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", directory);
 
-				// Create the container if it doesn't exist
-				await containerClient.CreateIfNotExistsAsync();
-
-				// Generate a unique blob name
-				var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
-				var blobClient = containerClient.GetBlobClient(fileName);
-
-				// Upload the file to Blob Storage
-				using (var stream = file.OpenReadStream())
+				// Ensure the directory exists
+				if (!Directory.Exists(rootPath))
 				{
-					await blobClient.UploadAsync(stream, new BlobHttpHeaders { ContentType = file.ContentType });
+					Directory.CreateDirectory(rootPath);
 				}
 
-				// Return the blob URL
-				var blobUrl = blobClient.Uri.ToString();
-				return new FileSaveResult { IsSuccess = true, Path = blobUrl };
+				// Generate a unique file name
+				var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
+				var filePath = Path.Combine(rootPath, fileName);
+
+				// Save the file locally
+				using (var stream = new FileStream(filePath, FileMode.Create))
+				{
+					await file.CopyToAsync(stream);
+				}
+
+				// Return the correct relative path (excluding wwwroot)
+				var relativePath = Path.Combine(directory == "proofs" ? $"proofs/{userId}" : directory, fileName)
+					.Replace("\\", "/");
+
+				return new FileSaveResult { IsSuccess = true, Path = $"/{relativePath}" };
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, "Error saving file to Blob Storage.");
-				return new FileSaveResult { IsSuccess = false, Messege = "An error occurred while saving the file to Blob Storage." };
+				_logger.LogError(ex, "Error saving file to local storage.");
+				return new FileSaveResult { IsSuccess = false, Messege = "An error occurred while saving the file to local storage." };
 			}
 		}
+
+
 		#endregion
 		#region User Management
 

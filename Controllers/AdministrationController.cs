@@ -82,6 +82,7 @@ namespace IdealTrip.Controllers
 		public async Task<ActionResult<DataSendingResponse>> ApproveUser(string guid)
 		{
 			var user = await _userManager.Users.FirstOrDefaultAsync(user => user.Id.ToString() == guid);
+			var email = user.Email;
 
 			if (user == null)
 			{
@@ -98,7 +99,7 @@ namespace IdealTrip.Controllers
 			var result = await _userManager.UpdateAsync(user);
 			if (result.Succeeded)
 			{
-				var sent = await _userService.SendAccountApprovedEmail(user.Email);
+				var sent = await _userService.SendAccountApprovedEmail(email);
 				if (sent.IsSuccess)
 				{
 					return Ok(new DataSendingResponse
@@ -128,6 +129,7 @@ namespace IdealTrip.Controllers
 		public async Task<ActionResult<DataSendingResponse>> RejectUser(string guid)
 		{
 			var user = await _userManager.Users.FirstOrDefaultAsync(user => user.Id.ToString() == guid);
+			var email = user.Email;
 
 			if (user == null)
 			{
@@ -143,7 +145,7 @@ namespace IdealTrip.Controllers
 
 			if (result.Succeeded)
 			{
-				var sent = await _userService.SendAccountRejectedEmail(user.Email);
+				var sent = await _userService.SendAccountRejectedEmail(email);
 				if (sent.IsSuccess)
 				{
 					return Ok(new DataSendingResponse
@@ -172,7 +174,7 @@ namespace IdealTrip.Controllers
 		[HttpGet("get-users")]
 		public async Task<ActionResult<DataSendingResponse>> GetAllUsers()
 		{
-			var users = await _userManager.Users.Where(u => u.Role != "Admin").Select(user =>
+			var users = await _userManager.Users.Where(u => u.Role != "Admin" && u.Status == ProofStatus.Verified).Select(user =>
 				new AllUsersAdminViewDto
 				{
 					UserId = user.Id,
@@ -269,7 +271,7 @@ namespace IdealTrip.Controllers
 			var sixtyDaysAgo = DateTime.Now.AddDays(-60);
 
 			var currentStats = await _userManager.Users
-				.Where(u => u.CreatedAt >= thirtyDaysAgo && u.Role != "Admin")
+				.Where(u => u.CreatedAt >= thirtyDaysAgo && u.Role != "Admin" && u.Status == ProofStatus.Verified)
 				.GroupBy(u => u.Role)
 				.Select(g => new
 				{
@@ -332,7 +334,7 @@ namespace IdealTrip.Controllers
 			// Previous stats (e.g., users added until a year ago)
 			var oneYearAgo = DateTime.Now.AddYears(-1);
 			var previousStats = await _userManager.Users
-				.Where(u => u.CreatedAt <= oneYearAgo && u.Role != "Admin")
+				.Where(u => u.CreatedAt <= oneYearAgo && u.Role != "Admin" && u.Status == ProofStatus.Verified)
 				.GroupBy(u => u.Role)
 				.Select(g => new
 				{
