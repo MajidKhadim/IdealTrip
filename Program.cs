@@ -24,7 +24,8 @@ var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 builder.Services.AddSingleton<JwtHelper>();
 builder.Services.AddSingleton<EmailService>();
 builder.Services.AddScoped<IUserService,UserService>();
-
+builder.Services.AddSingleton<PaymentService>();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddAuthentication(options =>
 {
 	options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

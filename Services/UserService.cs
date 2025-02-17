@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Collections.Concurrent;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using IdealTrip.Models.TourGuide_Booking;
 
 namespace IdealTrip.Services
 {
@@ -396,12 +397,115 @@ namespace IdealTrip.Services
 			}
 		}
 
+		//public async Task<UserManagerResponse> RegisterTourGuideAsync(RegisterTourGuideModel model, string role)
+		//{
+		//	try
+		//	{
+		//		if (model == null) throw new ArgumentNullException(nameof(model));
+
+		//		var existingUser = await _userManager.FindByEmailAsync(model.Email);
+		//		if (existingUser != null)
+		//		{
+		//			return new UserManagerResponse
+		//			{
+		//				IsSuccess = false,
+		//				Messege = "This Email is already associated with another Account"
+		//			};
+		//		}
+
+		//		if (model.Password != model.ConfirmPassword)
+		//		{
+		//			return new UserManagerResponse
+		//			{
+		//				IsSuccess = false,
+		//				Messege = "Confirm Password does not match the password"
+		//			};
+		//		}
+
+		//		var user = new ApplicationUser
+		//		{
+		//			UserName = model.FullName,
+		//			Email = model.Email,
+		//			FullName = model.FullName,
+		//			Role = role,
+		//			PhoneNumber = model.PhoneNumber,
+		//			Address = model.Address,
+		//			Status = ProofStatus.Pending,
+		//		};
+
+		//		var result = await _userManager.CreateAsync(user, model.Password);
+		//		if (!result.Succeeded)
+		//		{
+		//			return new UserManagerResponse
+		//			{
+		//				IsSuccess = false,
+		//				Messege = "User registration failed",
+		//				Errors = result.Errors.Select(e => e.Description)
+		//			};
+		//		}
+
+		//		await _userManager.AddToRoleAsync(user, role);
+
+		//		// Save profile photo
+		//		if (model.ProfilePhoto != null)
+		//		{
+		//			var saveResult = await SaveFileWithValidation(user.Id, "profilephotos", model.ProfilePhoto);
+		//			if (!saveResult.IsSuccess)
+		//			{
+		//				await _userManager.DeleteAsync(user);
+		//				return new UserManagerResponse { IsSuccess = false, Messege = saveResult.Messege };
+		//			}
+		//			user.ProfilePhotoPath = saveResult.Path;
+		//			await _userManager.UpdateAsync(user);
+		//		}
+
+		//		// Save Property Ownership document
+		//		if (model.IdCard != null)
+		//		{
+		//			var IdCard = await SaveFileWithValidation(user.Id, "proofs", model.IdCard);
+		//			if (!IdCard.IsSuccess)
+		//			{
+		//				await _userManager.DeleteAsync(user);
+		//				return new UserManagerResponse { IsSuccess = false, Messege = IdCard.Messege };
+		//			}
+
+		//			_context.Proofs.Add(new Proof
+		//			{
+		//				UserId = user.Id,
+		//				DocumentType = "Id Card",
+		//				DocumentPath = IdCard.Path
+		//			});
+		//		}
+
+		//		// Save the proofs in the database
+		//		await _context.SaveChangesAsync();
+
+		//		return new UserManagerResponse { IsSuccess = true, Messege = "User registered successfully." };
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		_logger.LogError(ex, "Error occurred while registering local home owner.");
+		//		var user = await _userManager.FindByEmailAsync(model.Email);
+		//		if (user != null)
+		//		{
+		//			await _userManager.DeleteAsync(user);
+		//		}
+
+		//		return new UserManagerResponse
+		//		{
+		//			IsSuccess = false,
+		//			Messege = ex.Message
+		//		};
+		//	}
+		//}
+
 		public async Task<UserManagerResponse> RegisterTourGuideAsync(RegisterTourGuideModel model, string role)
 		{
 			try
 			{
 				if (model == null) throw new ArgumentNullException(nameof(model));
 
+				// Check if email already exists
 				var existingUser = await _userManager.FindByEmailAsync(model.Email);
 				if (existingUser != null)
 				{
@@ -412,6 +516,7 @@ namespace IdealTrip.Services
 					};
 				}
 
+				// Confirm password validation
 				if (model.Password != model.ConfirmPassword)
 				{
 					return new UserManagerResponse
@@ -421,15 +526,17 @@ namespace IdealTrip.Services
 					};
 				}
 
+				// Create new ApplicationUser
 				var user = new ApplicationUser
 				{
-					UserName = model.FullName,
+					UserName = model.Email,  // Better to use email as username
 					Email = model.Email,
 					FullName = model.FullName,
 					Role = role,
 					PhoneNumber = model.PhoneNumber,
 					Address = model.Address,
-					Status = ProofStatus.Pending,
+					Status = ProofStatus.Pending, // Admin needs to verify first
+					IsEmailConfirmed = false
 				};
 
 				var result = await _userManager.CreateAsync(user, model.Password);
@@ -443,9 +550,10 @@ namespace IdealTrip.Services
 					};
 				}
 
+				// Assign role
 				await _userManager.AddToRoleAsync(user, role);
 
-				// Save profile photo
+				// Save Profile Photo
 				if (model.ProfilePhoto != null)
 				{
 					var saveResult = await SaveFileWithValidation(user.Id, "profilephotos", model.ProfilePhoto);
@@ -458,32 +566,47 @@ namespace IdealTrip.Services
 					await _userManager.UpdateAsync(user);
 				}
 
-				// Save Property Ownership document
+				// Save ID Card Proof
 				if (model.IdCard != null)
 				{
-					var IdCard = await SaveFileWithValidation(user.Id, "proofs", model.IdCard);
-					if (!IdCard.IsSuccess)
+					var idCard = await SaveFileWithValidation(user.Id, "proofs", model.IdCard);
+					if (!idCard.IsSuccess)
 					{
 						await _userManager.DeleteAsync(user);
-						return new UserManagerResponse { IsSuccess = false, Messege = IdCard.Messege };
+						return new UserManagerResponse { IsSuccess = false, Messege = idCard.Messege };
 					}
 
 					_context.Proofs.Add(new Proof
 					{
 						UserId = user.Id,
 						DocumentType = "Id Card",
-						DocumentPath = IdCard.Path
+						DocumentPath = idCard.Path
 					});
 				}
 
-				// Save the proofs in the database
+				// Save new Tour Guide Entry in TourGuide Table
+				var tourGuide = new TourGuide
+				{
+					UserId = user.Id,
+					FullName = model.FullName,
+					PhoneNumber = model.PhoneNumber,
+					HourlyRate = model.HourlyRate,
+					Experience = model.Experience,
+					Bio = model.Bio,
+					Location = model.Location,
+					IsAvailable = false // Default false, Admin will enable it
+				};
+
+				_context.TourGuide.Add(tourGuide);
+
+				// Save all changes
 				await _context.SaveChangesAsync();
 
-				return new UserManagerResponse { IsSuccess = true, Messege = "User registered successfully." };
+				return new UserManagerResponse { IsSuccess = true, Messege = "Tour Guide registered successfully. Awaiting admin approval." };
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError(ex, "Error occurred while registering local home owner.");
+				_logger.LogError(ex, "Error occurred while registering Tour Guide.");
 				var user = await _userManager.FindByEmailAsync(model.Email);
 				if (user != null)
 				{
@@ -497,6 +620,7 @@ namespace IdealTrip.Services
 				};
 			}
 		}
+
 		public async Task<UserManagerResponse> RegisterTouristAsync(RegisterTouristModel model, string role)
 		{
 			try
@@ -730,14 +854,7 @@ namespace IdealTrip.Services
 			{
 				IsSuccess = true,
 				Messege = new JwtSecurityTokenHandler().WriteToken(token),
-				Expiry = token.ValidTo,
-				Data = new
-				{
-					userId = user.Id,
-					email = user.Email,
-					userName = user.UserName,
-					role = user.Role
-				}
+				Expiry = token.ValidTo
 			};
 		}
 
@@ -1110,6 +1227,42 @@ namespace IdealTrip.Services
 				};
 			}
 		}
+		//public async Task<UserManagerResponse> GetUser()
+		//{
+		//	try
+		//	{
+		//		var user = await _userManager.FindByIdAsync();
+
+		//		if (user == null)
+		//			return new UserManagerResponse
+		//			{
+		//				IsSuccess = false,
+		//				Messege = "User Not Found"
+		//			};
+
+		//		return new UserManagerResponse
+		//		{
+		//			IsSuccess = true,
+		//			Messege = "User retrived Successfully",
+		//			Data = new
+		//			{
+		//				Email = user.Email,
+		//				UserName = user.UserName,
+		//				Address = user.Address,
+		//				ProfilePhotoUrl = user.ProfilePhotoPath
+		//			}
+		//		};
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		// Log the exception (if applicable)
+		//		return new UserManagerResponse
+		//		{
+		//			IsSuccess = false,
+		//			Messege = ex.Message
+		//		};
+		//	}
+		//}
 		#endregion
 
 	}

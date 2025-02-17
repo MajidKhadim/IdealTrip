@@ -1,4 +1,5 @@
 ﻿using IdealTrip.Models.Package_Booking;
+using IdealTrip.Models.TourGuide_Booking;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,7 @@ namespace IdealTrip.Models
         public DbSet<Proof> Proofs { get; set; }
 		public DbSet<Package> Packages { get; set; }
 		public DbSet<UsersPackageBooking> UsersPackages { get; set; }
+		public DbSet<TourGuide> TourGuide { get ; set; }
 		protected override void OnModelCreating(ModelBuilder builder)
 		{
 			base.OnModelCreating(builder);

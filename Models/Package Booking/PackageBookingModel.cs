@@ -3,10 +3,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace IdealTrip.Models.Package_Booking
 {
-	public class BookingModel
+	public class PackageBookingModel
 	{
-		[Required]
-		public Guid Id { get; set; }
 		[Required]
 		public string FullName { get; set; }
 		[Required]

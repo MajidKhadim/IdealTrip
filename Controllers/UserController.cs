@@ -1,22 +1,34 @@
 ﻿using IdealTrip.Models;
 using IdealTrip.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace IdealTrip.Controllers
 {
+	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+	[Authorize]
 	[Route("api/[controller]")]
 	public class UserController : ControllerBase
 	{
 		private readonly IUserService _userService;
-        public UserController(IUserService userService)
+		private readonly IHttpContextAccessor _contextAccessor;
+        public UserController(IUserService userService,IHttpContextAccessor httpContextAccessor)
         {
             _userService = userService;
+			_contextAccessor = httpContextAccessor;
         }
-        [HttpGet("{userId}")]
-		public async Task<IActionResult> GetUserProfile(string userId)
+        [HttpGet]
+		public async Task<IActionResult> GetUserProfile()
 		{
 			try
 			{
+				var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+				if (string.IsNullOrEmpty(userId))
+				{
+					return Unauthorized("Invalid token.");
+				}
 				var userInfo = await _userService.GetUserInfo(userId);  // Retrieve user profile from database
 				if (userInfo.IsSuccess)
 				{
@@ -37,12 +49,17 @@ namespace IdealTrip.Controllers
 			}
 		}
 
-		[HttpPost("{id}")]
-		public async Task<IActionResult> UpdateUser(string id, [FromForm] UpdateUserModel model)
+		[HttpPost]
+		public async Task<IActionResult> UpdateUser([FromForm] UpdateUserModel model)
 		{
 			try
 			{
-				var result = await _userService.UpdateUser(model,id);
+				var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+				if (string.IsNullOrEmpty(userId))
+				{
+					return Unauthorized("Invalid token.");
+				}
+				var result = await _userService.UpdateUser(model,userId);
 				if (result.IsSuccess)
 				{
 					return Ok(result);

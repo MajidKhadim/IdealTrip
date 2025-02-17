@@ -3,6 +3,7 @@ using IdealTrip.Models;
 using IdealTrip.Models.Login;
 using IdealTrip.Models.Register;
 using IdealTrip.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -11,14 +12,17 @@ using System.Security.Claims;
 
 namespace IdealTrip.Controllers
 {
+	[ApiController]
 	[Route("api/[controller]")]
 	public class AuthController : ControllerBase
 	{
 		private readonly IUserService _userService;
+		private readonly IHttpContextAccessor _contextAccessor;
 
-		public AuthController(IUserService userService)
+		public AuthController(IUserService userService,IHttpContextAccessor contextAccessor)
 		{
 			_userService = userService;
+			_contextAccessor = contextAccessor;
 		}
 
 		#region Registration
@@ -246,6 +250,14 @@ namespace IdealTrip.Controllers
 				if (ModelState.IsValid)
 				{
 					var result = await _userService.LoginUserAsync(model);
+					if (await _userService.IsAdmin(model.Email))
+					{
+						return BadRequest(new UserManagerResponse
+						{
+							IsSuccess = false,
+							Messege = "Admins are not allowed to Login Here"
+						});
+					}
 					if (result.IsSuccess)
 					{
 						return Ok(result);
@@ -303,8 +315,8 @@ namespace IdealTrip.Controllers
 			}
 		}
 	#endregion
-		#region Password Management
-		[HttpPost("forgot-password")]
+	#region Password Management
+	[HttpPost("forgot-password")]
 		public async Task<IActionResult> ForgotPassword([FromBody] ForgetPasswordModel model)
 		{
 			try
