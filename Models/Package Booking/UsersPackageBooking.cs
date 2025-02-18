@@ -21,7 +21,8 @@ namespace IdealTrip.Models.Package_Booking
 		public Package Package { get; set; }
         [ForeignKey("UserId")]
         public ApplicationUser User { get; set; }
-        public string Status { get; set; }
+        public string Status { get; set; } //Confirmed,Pending,Cancelled
+        public string? PaymentIntentId { get; set; }
         public decimal TotalBill { get; set; }
 		public DateTime BookingDate { get; set; } = DateTime.Now;
 	}

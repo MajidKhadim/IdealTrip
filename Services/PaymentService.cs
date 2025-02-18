@@ -3,6 +3,7 @@ using Stripe.Checkout;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 
 namespace IdealTrip.Services
 {
@@ -16,7 +17,7 @@ namespace IdealTrip.Services
 			StripeConfiguration.ApiKey = _secretKey;
 		}
 
-		public async Task<string> CreateCheckoutSession(Guid bookingId, string productName, decimal amount, string currency, string successUrl, string cancelUrl)
+		public static async Task<string> CreateCheckoutSession(Guid bookingId, string productName, decimal amount, string currency, string successUrl, string cancelUrl)
 		{
 			var options = new SessionCreateOptions
 			{
@@ -46,6 +47,30 @@ namespace IdealTrip.Services
 			Session session = await service.CreateAsync(options);
 
 			return session.Url; // Returns the Stripe Checkout URL
+		}
+		public  async Task<object> CreatePaymentIntent(Guid bookingId,string productType,decimal amount)
+		{
+			if (amount <= 0)
+			{
+				return new { message = "Invalid amount" };
+			}
+
+			var options = new PaymentIntentCreateOptions
+			{
+				Amount = (long)(amount * 100), // Convert to cents
+				Currency = "usd",
+				PaymentMethodTypes = new List<string> { "card" },
+				Metadata = new Dictionary<string, string>
+			{
+				{ "BookingId", bookingId.ToString() },
+				{ "ProductType", productType }
+			}
+			};
+
+			var service = new PaymentIntentService();
+			var paymentIntent = await service.CreateAsync(options);
+
+			return new { clientSecret = paymentIntent.ClientSecret };
 		}
 	}
 }
