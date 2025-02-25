@@ -1,9 +1,12 @@
-﻿using IdealTrip.Models;
+﻿using IdealTrip.Helpers;
+using IdealTrip.Models;
+using IdealTrip.Models.Database_Tables;
 using IdealTrip.Models.Package_Booking;
 using IdealTrip.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Stripe.Checkout;
 using System.Security.Claims;
@@ -16,18 +19,22 @@ namespace IdealTrip.Controllers
 	
     public class PackageController : ControllerBase
     {
+		private readonly IHubContext<NotificationHub> _hubContext;
         private readonly ApplicationDbContext _context;
         private readonly ILogger<PackageController> _logger;
 		private readonly IConfiguration _config;
 		private readonly IHttpContextAccessor _httpContextAccessor;
 		private readonly PaymentService _paymentService;
-        public PackageController(ApplicationDbContext context, ILogger<PackageController> logger,IConfiguration configuration,IHttpContextAccessor httpContextAccessor,PaymentService service)
+		private readonly EmailService _emailService;
+        public PackageController(ApplicationDbContext context, ILogger<PackageController> logger,IConfiguration configuration,IHttpContextAccessor httpContextAccessor,PaymentService service,IHubContext<NotificationHub> hubContext,EmailService emailService)
         {
             _context = context;
             _logger = logger;
 			_config = configuration;
 			_httpContextAccessor = httpContextAccessor;
 			_paymentService = service;
+			_hubContext = hubContext;
+			_emailService = emailService;
         }
 
         [HttpGet]
@@ -141,6 +148,35 @@ namespace IdealTrip.Controllers
 				return BadRequest(new UserManagerResponse { IsSuccess = false, Messege = "Failed to create payment intent!" });
 			}
 		}
+		//[HttpPost("booking/payment-success")]
+		//public async Task<IActionResult> PaymentSuccess([FromBody] PaymentSuccessDto paymentData)
+		//{
+		//	if (paymentData == null || string.IsNullOrEmpty(paymentData.BookingId) || string.IsNullOrEmpty(paymentData.PaymentIntentId))
+		//	{
+		//		return BadRequest(new DataSendingResponse { IsSuccess = false, Message = "Invalid request data." });
+		//	}
+		//	var bookingId = Guid.Parse(paymentData.BookingId);
+
+		//	var booking = await _context.UsersPackages.FindAsync(bookingId);
+
+		//	if (booking == null)
+		//	{
+		//		return NotFound(new DataSendingResponse { IsSuccess = false, Message = "Booking not found." });
+		//	}
+
+		//	// Update booking status and store PaymentIntentId
+		//	booking.Status = "Paid";  // Assuming "Paid" is the status for completed payments
+		//	booking.PaymentIntentId = paymentData.PaymentIntentId;
+
+		//	_context.UsersPackages.Update(booking);
+		//	await _context.SaveChangesAsync();
+		//	await _hubContext.Clients.All.SendAsync(
+		//	"ReceiveNotification",
+		//	$"✅ Payment successful! {booking.User.FullName} booked '{booking.Package.Title}' package. 💳 Payment ID: {paymentData.PaymentIntentId}"
+		//	);
+
+		//	return Ok(new DataSendingResponse { IsSuccess = true, Message = "Payment updated successfully." });
+		//}
 		[HttpPost("booking/payment-success")]
 		public async Task<IActionResult> PaymentSuccess([FromBody] PaymentSuccessDto paymentData)
 		{
@@ -149,22 +185,63 @@ namespace IdealTrip.Controllers
 				return BadRequest(new DataSendingResponse { IsSuccess = false, Message = "Invalid request data." });
 			}
 
-			var booking = await _context.UsersPackages.FindAsync(paymentData.BookingId);
+			var bookingId = Guid.Parse(paymentData.BookingId);
+			var booking = await _context.UsersPackages
+										.Include(b => b.User)
+										.Include(b => b.Package)
+										.FirstOrDefaultAsync(b => b.Id == bookingId);
 
 			if (booking == null)
 			{
 				return NotFound(new DataSendingResponse { IsSuccess = false, Message = "Booking not found." });
 			}
 
-			// Update booking status and store PaymentIntentId
-			booking.Status = "Paid";  // Assuming "Paid" is the status for completed payments
+			// ✅ Update booking status and store PaymentIntentId
+			booking.Status = "Paid";
 			booking.PaymentIntentId = paymentData.PaymentIntentId;
 
 			_context.UsersPackages.Update(booking);
 			await _context.SaveChangesAsync();
 
-			return Ok(new DataSendingResponse { IsSuccess = true, Message = "Payment updated successfully." });
+			// ✅ Send Real-time Notification (Admin)
+			var adminIds = await _context.Users
+										 .Where(u => u.Role == "Admin")
+										 .Select(u => u.Id)
+										 .ToListAsync();
+
+			var notificationMessage = $"📝 {booking.User.FullName} booked '{booking.Package.Title}' successfully. 💳 Payment ID: {paymentData.PaymentIntentId}";
+			foreach (var adminId in adminIds)
+			{
+				var adminNotification = new Notifications
+				{
+					UserId = adminId,
+					Messege = notificationMessage
+				};
+				_context.Notifications.Add(adminNotification);
+
+				// 🚀 Real-time notification
+				await _hubContext.Clients.User(adminId.ToString())
+								  .SendAsync("ReceiveNotification", adminNotification.Messege);
+			}
+
+			// 🎉 User Notification (Real-time)
+			var userNotificationMessage = $"🎉 Your booking for '{booking.Package.Title}' is confirmed! 💳 Payment ID: {paymentData.PaymentIntentId}";
+			var userNotification = new Notifications
+			{
+				UserId = booking.User.Id,
+				Messege = userNotificationMessage
+			};
+			_context.Notifications.Add(userNotification);
+			await _hubContext.Clients.User(booking.User.Id.ToString())
+							  .SendAsync("ReceiveNotification", userNotificationMessage);
+
+			await _context.SaveChangesAsync();
+			var emailContent = EmailTemplates.PaymentSuccessTemplate(booking.User.FullName, booking.TotalBill.ToString(), DateTime.Now.ToString(), booking.Package.Title, booking.Package.Description, booking.Status, booking.PaymentIntentId);
+			await _emailService.SendEmailAsync(booking.User.Email,"Booking SuccessFul",emailContent);
+
+			return Ok(new DataSendingResponse { IsSuccess = true, Message = "Payment updated and latest notifications sent successfully." });
 		}
+
 
 
 	}

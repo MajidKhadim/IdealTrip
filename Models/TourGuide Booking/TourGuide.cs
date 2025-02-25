@@ -20,7 +20,7 @@ namespace IdealTrip.Models.TourGuide_Booking
 		public string PhoneNumber { get; set; }
 
 		[Required, Column(TypeName = "decimal(10,2)")]
-		public decimal HourlyRate { get; set; }
+		public decimal RatePerDay { get; set; }
 
 		[MaxLength(500)]
 		public string Experience { get; set; }

@@ -7,7 +7,7 @@ namespace IdealTrip.Models.Register
         [Required]
         public IFormFile IdCard { get; set; }
         [Required]
-        public decimal HourlyRate { get; set; }
+        public decimal RatePerDay { get; set; }
         [Required]
         public string Bio { get; set; }
         [Required]

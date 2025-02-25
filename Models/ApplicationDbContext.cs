@@ -1,4 +1,6 @@
-﻿using IdealTrip.Models.Package_Booking;
+﻿using IdealTrip.Models.Database_Tables;
+using IdealTrip.Models.LocalHome_Booking;
+using IdealTrip.Models.Package_Booking;
 using IdealTrip.Models.TourGuide_Booking;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -17,6 +19,12 @@ namespace IdealTrip.Models
 		public DbSet<Package> Packages { get; set; }
 		public DbSet<UsersPackageBooking> UsersPackages { get; set; }
 		public DbSet<TourGuide> TourGuide { get ; set; }
+		public DbSet<Notifications> Notifications { get; set; }
+
+		public DbSet<UserTourGuideBooking> UserTourGuideBookings { get; set; }
+		public DbSet<Feedback> FeedBacks { get; set; }
+		public DbSet<LocalHome> LocalHomes { get; set; }
+		public DbSet<ServiceImage> ServiceImages { get; set; }
 		protected override void OnModelCreating(ModelBuilder builder)
 		{
 			base.OnModelCreating(builder);
@@ -42,6 +50,18 @@ namespace IdealTrip.Models
 			builder.Entity<ApplicationUser>()
 				.HasIndex(u => u.Email)
 				.IsUnique(true);
+
+			builder.Entity<UserTourGuideBooking>()
+		.HasOne(b => b.User)
+		.WithMany()
+		.HasForeignKey(b => b.UserId)
+		.OnDelete(DeleteBehavior.Restrict); // Prevents cascade delete
+
+			builder.Entity<UserTourGuideBooking>()
+				.HasOne(b => b.TourGuide)
+				.WithMany()
+				.HasForeignKey(b => b.TourGuideId)
+				.OnDelete(DeleteBehavior.Restrict); // Prevents cascade delete
 		}
 	}
 }

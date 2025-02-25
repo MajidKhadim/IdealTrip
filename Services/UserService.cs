@@ -590,7 +590,7 @@ namespace IdealTrip.Services
 					UserId = user.Id,
 					FullName = model.FullName,
 					PhoneNumber = model.PhoneNumber,
-					HourlyRate = model.HourlyRate,
+					RatePerDay = model.RatePerDay,
 					Experience = model.Experience,
 					Bio = model.Bio,
 					Location = model.Location,

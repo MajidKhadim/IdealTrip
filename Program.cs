@@ -70,6 +70,7 @@ string azureBlobStorageConnectionString = builder.Configuration["AzureBlobStorag
 
 // Register the BlobServiceClient with the connection string
 builder.Services.AddSingleton(x => new BlobServiceClient(azureBlobStorageConnectionString));
+builder.Services.AddSignalR();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -101,6 +102,7 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 app.UseStaticFiles();
+app.MapHub<NotificationHub>("/notificationhub");
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAnyOrigin");

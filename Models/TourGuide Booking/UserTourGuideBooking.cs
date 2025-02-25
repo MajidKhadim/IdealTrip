@@ -6,18 +6,16 @@ namespace IdealTrip.Models.TourGuide_Booking
 	public class UserTourGuideBooking
 	{
 		[Key]
-		public int Id { get; set; }  // Primary Key
+		public Guid Id { get; set; }  // Primary Key
 
 		[Required]
-		[ForeignKey("ApplicationUser")]
-		public string UserId { get; set; }  // Foreign Key (Tourist)
+		public Guid UserId { get; set; }  // Foreign Key (Tourist)
 
 		[Required]
-		[ForeignKey("TourGuide")]
-		public string TourGuideId { get; set; }  // Foreign Key (Tour Guide)
+		public Guid TourGuideId { get; set; }  // Foreign Key (Tour Guide)
 
 		[Required]
-		public DateTime BookingDate { get; set; }  // When the booking was made
+		public DateTime BookingDate { get; set; } // When the booking was made
 
 		[Required]
 		public DateTime StartDate { get; set; }  // Tour Start Date
@@ -37,7 +35,12 @@ namespace IdealTrip.Models.TourGuide_Booking
 		public string Status { get; set; } = "Pending";  // Status: Pending, Approved, Cancelled
 
 		// Navigation Properties
-		public virtual ApplicationUser? User { get; set; }
-		public virtual TourGuide? TourGuide { get; set; }
-	}
+		[ForeignKey("UserId")]
+		public virtual ApplicationUser User { get; set; }
+		[ForeignKey("TourGuideId")]
+		public virtual TourGuide TourGuide { get; set; }
+        public string? PaymentIntentId { get; set; }
+		[Required]
+        public int TotalDays { get; set; }
+    }
 }
