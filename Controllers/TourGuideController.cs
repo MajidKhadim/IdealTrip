@@ -13,8 +13,8 @@ using IdealTrip.Models.Enums;
 
 namespace IdealTrip.Controllers
 {
-	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-	[Authorize("Tourist")]
+	//[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+	//[Authorize("Tourist")]
 	[Route("api/[controller]")]
 	[ApiController]
 
@@ -38,7 +38,7 @@ namespace IdealTrip.Controllers
 		{
 			try
 			{
-				var tourGuides = await _context.TourGuide
+				var tourGuides = await _context.TourGuides
 				.Where(tg => tg.IsAvailable && tg.User.Status == Models.Enums.ProofStatus.Verified)
 				.Select(tg => new
 				{
@@ -76,7 +76,7 @@ namespace IdealTrip.Controllers
 
 			try
 			{
-				var tourGuide = await _context.TourGuide.Where(tg => tg.Id == id)
+				var tourGuide = await _context.TourGuides.Where(tg => tg.Id == id)
 				.Select(tg => new
 				{
 					tg.Id,
@@ -127,7 +127,7 @@ namespace IdealTrip.Controllers
 				return BadRequest(new { IsSuccess = false, Message = "Invalid booking details!" });
 			}
 
-			var tourGuide = await _context.TourGuide.FindAsync(booking.TourGuideId);
+			var tourGuide = await _context.TourGuides.FindAsync(booking.TourGuideId);
 			if (tourGuide == null || !tourGuide.IsAvailable)
 			{
 				return BadRequest(new { IsSuccess = false, Message = "Tour guide not available!" });
@@ -224,7 +224,7 @@ namespace IdealTrip.Controllers
 				return Unauthorized(new DataSendingResponse { IsSuccess = false, Message = "Unauthorized action." });
 			}
 
-			var tourGuide = await _context.TourGuide.FirstOrDefaultAsync(tg => tg.Id == request.ServiceId);
+			var tourGuide = await _context.TourGuides.FirstOrDefaultAsync(tg => tg.Id == request.ServiceId);
 			if (tourGuide == null)
 			{
 				return NotFound(new DataSendingResponse
@@ -254,7 +254,7 @@ namespace IdealTrip.Controllers
 				.AverageAsync(f => (decimal?)f.Rating) ?? 0;
 
 			tourGuide.Rating = ((float)averageRating);
-			_context.TourGuide.Update(tourGuide);
+			_context.TourGuides.Update(tourGuide);
 			await _context.SaveChangesAsync();
 
 			return Ok(new DataSendingResponse

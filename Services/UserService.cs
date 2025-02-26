@@ -597,7 +597,7 @@ namespace IdealTrip.Services
 					IsAvailable = false // Default false, Admin will enable it
 				};
 
-				_context.TourGuide.Add(tourGuide);
+				_context.TourGuides.Add(tourGuide);
 
 				// Save all changes
 				await _context.SaveChangesAsync();

@@ -18,7 +18,7 @@ namespace IdealTrip.Models
         public DbSet<Proof> Proofs { get; set; }
 		public DbSet<Package> Packages { get; set; }
 		public DbSet<UsersPackageBooking> UsersPackages { get; set; }
-		public DbSet<TourGuide> TourGuide { get ; set; }
+		public DbSet<TourGuide> TourGuides { get ; set; }
 		public DbSet<Notifications> Notifications { get; set; }
 
 		public DbSet<UserTourGuideBooking> UserTourGuideBookings { get; set; }

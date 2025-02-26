@@ -80,7 +80,6 @@ namespace IdealTrip.Controllers
 
 					_context.ServiceImages.Add(new ServiceImage
 					{
-						Id = Guid.NewGuid(),
 						ServiceId = localHome.Id,
 						ServiceType = Service.LocalHome.ToString(),
 						ImageUrl = imageUrl,

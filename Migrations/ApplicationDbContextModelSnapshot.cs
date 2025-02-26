@@ -17,7 +17,7 @@ namespace IdealTrip.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.0")
+                .HasAnnotation("ProductVersion", "8.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -176,7 +176,63 @@ namespace IdealTrip.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("FeedBacks");
+                });
+
+            modelBuilder.Entity("IdealTrip.Models.LocalHome_Booking.LocalHome", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AddressLine")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("AvailableFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("AvailableTo")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("PricePerNight")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<float>("Rating")
+                        .HasColumnType("real");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("LocalHomes");
                 });
 
             modelBuilder.Entity("IdealTrip.Models.Package_Booking.Package", b =>
@@ -294,6 +350,34 @@ namespace IdealTrip.Migrations
                     b.ToTable("Proofs");
                 });
 
+            modelBuilder.Entity("IdealTrip.Models.ServiceImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("ServiceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ServiceType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ServiceImages");
+                });
+
             modelBuilder.Entity("IdealTrip.Models.TourGuide_Booking.TourGuide", b =>
                 {
                     b.Property<Guid>("Id")
@@ -341,7 +425,7 @@ namespace IdealTrip.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("TourGuide");
+                    b.ToTable("TourGuides");
                 });
 
             modelBuilder.Entity("IdealTrip.Models.TourGuide_Booking.UserTourGuideBooking", b =>
@@ -533,6 +617,28 @@ namespace IdealTrip.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("IdealTrip.Models.Feedback", b =>
+                {
+                    b.HasOne("IdealTrip.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("IdealTrip.Models.LocalHome_Booking.LocalHome", b =>
+                {
+                    b.HasOne("IdealTrip.Models.ApplicationUser", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("IdealTrip.Models.Package_Booking.UsersPackageBooking", b =>

@@ -97,7 +97,7 @@ namespace IdealTrip.Controllers
 			user.Status = ProofStatus.Verified;
 
 			var result = await _userManager.UpdateAsync(user);
-			var tourguide = await _context.TourGuide.FirstOrDefaultAsync(tg => tg.User.Id.ToString() == guid);
+			var tourguide = await _context.TourGuides.FirstOrDefaultAsync(tg => tg.User.Id.ToString() == guid);
 			tourguide.IsAvailable = true;
 			_context.Update(tourguide);
 			if (result.Succeeded)
