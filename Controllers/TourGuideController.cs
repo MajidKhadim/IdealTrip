@@ -13,8 +13,8 @@ using IdealTrip.Models.Enums;
 
 namespace IdealTrip.Controllers
 {
-	//[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-	//[Authorize("Tourist")]
+	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+	[Authorize(Roles = "Tourist")]
 	[Route("api/[controller]")]
 	[ApiController]
 
@@ -92,8 +92,8 @@ namespace IdealTrip.Controllers
 				{
 					return NotFound(new UserManagerResponse
 					{
-						IsSuccess = false,
-						Messege = "Tour Guide NOt Found"
+						IsSuccess = true,
+						Messege = "Tour Guide Not Found"
 					});
 				}
 				return Ok(new UserManagerResponse
@@ -214,7 +214,9 @@ namespace IdealTrip.Controllers
 
 			return Ok(new { IsSuccess = true, Bookings = bookings });
 		}
-		// POST: Add Feedback for Tour Guide
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "Tourist")]
+		// POST: Add Feedback for
 		[HttpPost("add-feedback")]
 		public async Task<IActionResult> AddFeedback([FromBody] FeedbackRequest request)
 		{

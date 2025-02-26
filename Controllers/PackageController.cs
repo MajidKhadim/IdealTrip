@@ -14,7 +14,7 @@ using System.Security.Claims;
 namespace IdealTrip.Controllers
 {
 	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-	[Authorize]
+	[Authorize(Roles = "Tourist")]
 	[Route("api/[controller]")]
 	
     public class PackageController : ControllerBase
