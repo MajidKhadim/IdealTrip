@@ -177,14 +177,24 @@ namespace IdealTrip.Controllers
 				return NotFound(new { IsSuccess = false, Message = "Booking not found." });
 			}
 
-			booking.Status = "Paid";
-			booking.PaymentIntentId = paymentData.PaymentIntentId;
-			_context.UserTourGuideBookings.Update(booking);
-			await _context.SaveChangesAsync();
-			string content = EmailTemplates.PaymentSuccessTemplate(booking.User.FullName, booking.TotalAmount.ToString(), booking.BookingDate.ToString(), booking.TourGuide.FullName, booking.TourGuide.Bio, booking.Status, booking.PaymentIntentId);
-			await _emailService.SendEmailAsync(booking.User.Email, "Booking Successful", content);
+			using var transaction = await _context.Database.BeginTransactionAsync();
+			try
+			{
+				booking.Status = "Paid";
+				booking.PaymentIntentId = paymentData.PaymentIntentId;
+				_context.UserTourGuideBookings.Update(booking);
+				await _context.SaveChangesAsync();
+				string content = EmailTemplates.PaymentSuccessTemplate(booking.User.FullName, booking.TotalAmount.ToString(), booking.BookingDate.ToString(), booking.TourGuide.FullName, booking.TourGuide.Bio, booking.Status, booking.PaymentIntentId);
+				await _emailService.SendEmailAsync(booking.User.Email, "Booking Successful", content);
 
-			return Ok(new { IsSuccess = true, Message = "Payment updated successfully. Confirmation email sent." });
+				await transaction.CommitAsync();
+				return Ok(new { IsSuccess = true, Message = "Payment updated successfully. Confirmation email sent." });
+			}
+			catch
+			{
+				await transaction.RollbackAsync();
+				return BadRequest(new { IsSuccess = false, Message = "Payment processing failed." });
+			}
 		}
 
 		[HttpGet("user-bookings")]
@@ -214,8 +224,6 @@ namespace IdealTrip.Controllers
 
 			return Ok(new { IsSuccess = true, Bookings = bookings });
 		}
-		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-		[Authorize(Roles = "Tourist")]
 		// POST: Add Feedback for
 		[HttpPost("add-feedback")]
 		public async Task<IActionResult> AddFeedback([FromBody] FeedbackRequest request)

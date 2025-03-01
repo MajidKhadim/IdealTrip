@@ -25,6 +25,7 @@ namespace IdealTrip.Models
 		public DbSet<Feedback> FeedBacks { get; set; }
 		public DbSet<LocalHome> LocalHomes { get; set; }
 		public DbSet<ServiceImage> ServiceImages { get; set; }
+		public DbSet<UserLocalHomeBooking> UserLocalHomesBookings { get; set; }
 		protected override void OnModelCreating(ModelBuilder builder)
 		{
 			base.OnModelCreating(builder);
@@ -62,6 +63,20 @@ namespace IdealTrip.Models
 				.WithMany()
 				.HasForeignKey(b => b.TourGuideId)
 				.OnDelete(DeleteBehavior.Restrict); // Prevents cascade delete
+
+			builder.Entity<UserLocalHomeBooking>()
+				.HasOne(ulhb => ulhb.User)
+				.WithMany()
+				.HasForeignKey(ulhb => ulhb.UserId)
+				.OnDelete(DeleteBehavior.NoAction);  // ❌ Prevent Cascade Delete
+
+			builder.Entity<UserLocalHomeBooking>()
+				.HasOne(ulhb => ulhb.LocalHome)
+				.WithMany()
+				.HasForeignKey(ulhb => ulhb.LocalHomeId)
+				.OnDelete(DeleteBehavior.NoAction);  // ❌ Prevent Cascade Delete
+			base.OnModelCreating(builder);
 		}
+
 	}
 }

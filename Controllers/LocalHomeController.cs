@@ -18,18 +18,22 @@ namespace IdealTrip.Controllers
 {
 	[Route("api/[controller]")]
 	[ApiController]
-	[Authorize(Roles = "LocalHomeOwner")]
 	public class LocalHomeController : ControllerBase
 	{
 		private readonly ApplicationDbContext _context;
 		private readonly IHttpContextAccessor _contextAccessor;
+		private readonly PaymentService _paymentService;
+		private readonly EmailService _emailService;
 
-		public LocalHomeController(ApplicationDbContext context, IHttpContextAccessor contextAccessor)
+		public LocalHomeController(ApplicationDbContext context, IHttpContextAccessor contextAccessor, PaymentService paymentService)
 		{
 			_context = context;
 			_contextAccessor = contextAccessor;
+			_paymentService = paymentService;
 		}
 
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "LocalHomeOwner")]
 		[HttpPost("add-localhome")]
 		public async Task<IActionResult> AddLocalHome([FromForm] AddLocalHomeModel model)
 		{
@@ -125,14 +129,20 @@ namespace IdealTrip.Controllers
 				Message = "Local home added successfully with images."
 			});
 		}
-
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "LocalHomeOwner")]
 		[HttpPut("update-localhome/{id}")]
 		public async Task<IActionResult> UpdateLocalHome(Guid id, [FromForm] AddLocalHomeModel updatedHome)
 		{
+			var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
 			var home = await _context.LocalHomes.FirstOrDefaultAsync(h => h.Id == id);
 			if (home == null)
 			{
 				return NotFound(new DataSendingResponse { IsSuccess = false, Message = "Local home not found." });
+			}
+			if(userId != home.OwnerId.ToString())
+			{
+				return Forbid();
 			}
 
 			// ✅ Update Home Details
@@ -238,14 +248,20 @@ namespace IdealTrip.Controllers
 			});
 		}
 
-
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "LocalHomeOwner")]
 		[HttpDelete("delete-localhome/{id}")]
 		public async Task<IActionResult> DeleteLocalHome(Guid id)
 		{
+			var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
 			var home = await _context.LocalHomes.FirstOrDefaultAsync(h => h.Id == id);
 			if (home == null)
 			{
 				return NotFound(new DataSendingResponse { IsSuccess = false, Message = "Local home not found." });
+			}
+			if(userId != home.OwnerId.ToString())
+			{
+				return Forbid();
 			}
 
 			// ✅ Fetch images from the ServiceImages table
@@ -273,187 +289,294 @@ namespace IdealTrip.Controllers
 				Message = "Local home and associated images deleted successfully."
 			});
 		}
-		//[HttpPost("booking/initiate")]
-		//public async Task<IActionResult> InitiateBooking([FromBody] LocalHomeBookingModel booking)
-		//{
-		//	var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-		//	if (string.IsNullOrEmpty(userId))
-		//	{
-		//		return Unauthorized(new { IsSuccess = false, Message = "Invalid Token!" });
-		//	}
 
-		//	if (booking == null || booking.TotalDays <= 0)
-		//	{
-		//		return BadRequest(new { IsSuccess = false, Message = "Invalid booking details!" });
-		//	}
+		[HttpGet("GetLocalHomes")]
+		public async Task<IActionResult> GetLocalHomes([FromQuery] string? location = null, [FromQuery] decimal? minPrice = null, [FromQuery] decimal? maxPrice = null,
+[FromQuery] int? minCapacity = null)
+		{
+			var query = _context.LocalHomes.Where(h => h.IsAvailable);
 
-		//	var localHome = await _context.LocalHomes.FindAsync(booking.LocalHomeId);
-		//	if (localHome == null || !localHome.IsAvailable)
-		//	{
-		//		return BadRequest(new { IsSuccess = false, Message = "Local home not available!" });
-		//	}
+			if (!string.IsNullOrEmpty(location))
+				query = query.Where(h => h.AddressLine.Contains(location));
 
-		//	// Calculate total cost
-		//	decimal totalCost = booking.TotalDays * localHome.PricePerNight;
+			if (minPrice.HasValue)
+				query = query.Where(h => h.PricePerNight >= minPrice.Value);
 
-		//	var pendingBooking = new UserLocalHomeBooking
-		//	{
-		//		UserId = Guid.Parse(userId),
-		//		LocalHomeId = booking.LocalHomeId,
-		//		TotalAmount = totalCost,
-		//		Status = "Pending",
-		//		TotalDays = booking.TotalDays
-		//	};
+			if (maxPrice.HasValue)
+				query = query.Where(h => h.PricePerNight <= maxPrice.Value);
 
-		//	_context.UserLocalHomeBookings.Add(pendingBooking);
-		//	await _context.SaveChangesAsync();
+			if (minCapacity.HasValue)
+				query = query.Where(h => h.Capacity >= minCapacity.Value);
 
-		//	var paymentResult = await _paymentService.CreatePaymentIntent(pendingBooking.Id, "LocalHome", pendingBooking.TotalAmount);
-		//	var clientSecret = paymentResult?.GetType().GetProperty("clientSecret")?.GetValue(paymentResult)?.ToString();
+			var localHomes = await query.Select(lh => new
+			{
+				lh.Id,
+				lh.Name,
+				lh.Description,
+				lh.AddressLine,
+				lh.AvailableFrom,
+				lh.AvailableTo,
+				lh.Capacity,
+				lh.PricePerNight,
+				lh.Rating,
+				ImageUrl = _context.ServiceImages
+		.Where(img => img.ServiceId == lh.Id && img.ServiceType == Service.LocalHome.ToString() && img.IsPrimary)
+		.Select(img => img.ImageUrl)
+		.FirstOrDefault() // Returns a single image URL or null if not found
+			}).ToListAsync();
 
-		//	if (!string.IsNullOrEmpty(clientSecret))
-		//	{
-		//		return Ok(new { IsSuccess = true, BookingId = pendingBooking.Id, ClientSecret = clientSecret });
-		//	}
-		//	else
-		//	{
-		//		return BadRequest(new { IsSuccess = false, Message = "Failed to create payment intent!" });
-		//	}
-		//}
 
-		//[HttpPost("booking/payment-success")]
-		//public async Task<IActionResult> PaymentSuccess([FromBody] PaymentSuccessDto paymentData)
-		//{
-		//	if (paymentData == null || string.IsNullOrEmpty(paymentData.BookingId) || string.IsNullOrEmpty(paymentData.PaymentIntentId))
-		//	{
-		//		return BadRequest(new { IsSuccess = false, Message = "Invalid request data." });
-		//	}
 
-		//	var bookingId = Guid.Parse(paymentData.BookingId);
-		//	var booking = await _context.UserLocalHomeBookings.FindAsync(bookingId);
+			return Ok(new UserManagerResponse
+			{
+				Messege = "Local homes retrieved successfully",
+				IsSuccess = true,
+				Data = new
+				{
+					TotalRecords = localHomes.Count,
+					LocalHomes = localHomes
+				}
+			});
+		}
 
-		//	if (booking == null)
-		//	{
-		//		return NotFound(new { IsSuccess = false, Message = "Booking not found." });
-		//	}
+		[HttpGet("GetLocalHomeById/{id}")]
+		public async Task<IActionResult> GetLocalHomeById(Guid id)
+		{
+			var localHome = await _context.LocalHomes
+				.Where(h => h.Id == id && h.IsAvailable)
+				.Select(lh => new
+				{
+					lh.Id,
+					lh.Name,
+					lh.Description,
+					lh.AddressLine,
+					lh.AvailableFrom,
+					lh.AvailableTo,
+					lh.Capacity,
+					lh.PricePerNight,
+					lh.Rating,
+					MainImage = _context.ServiceImages
+						.Where(img => img.ServiceId == lh.Id && img.ServiceType == Service.LocalHome.ToString() && img.IsPrimary)
+						.Select(img => img.ImageUrl)
+						.FirstOrDefault(),
+					Images = _context.ServiceImages
+						.Where(img => img.ServiceId == lh.Id && img.ServiceType == Service.LocalHome.ToString()&& img.IsPrimary!=true)
+						.Select(img => img.ImageUrl)
+						.ToList()
+				})
+				.FirstOrDefaultAsync();
 
-		//	booking.Status = "Paid";
-		//	booking.PaymentIntentId = paymentData.PaymentIntentId;
-		//	_context.UserLocalHomeBookings.Update(booking);
-		//	await _context.SaveChangesAsync();
+			if (localHome == null)
+			{
+				return NotFound(new DataSendingResponse { IsSuccess = false, Message = "Local home not found." });
+			}
 
-		//	// Send email confirmation
-		//	string content = EmailTemplates.PaymentSuccessTemplate(booking.User.FullName, booking.TotalAmount.ToString(), booking.BookingDate.ToString(), booking.LocalHome.Name, booking.LocalHome.Description, booking.Status, booking.PaymentIntentId);
-		//	await _emailService.SendEmailAsync(booking.User.Email, "Booking Successful", content);
+			return Ok(new DataSendingResponse
+			{
+				IsSuccess = true,
+				Data = localHome,
+				Message = "Local home retrieved successfully."
+			});
+		}
 
-		//	return Ok(new { IsSuccess = true, Message = "Payment updated successfully. Confirmation email sent." });
-		//}
 
-		//[HttpGet("user-bookings")]
-		//public async Task<IActionResult> GetUserBookings([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
-		//{
-		//	var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-		//	if (string.IsNullOrEmpty(userId))
-		//	{
-		//		return Unauthorized(new { IsSuccess = false, Message = "Invalid Token!" });
-		//	}
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "Tourist")]
+		[HttpPost("booking/initiate")]
+		public async Task<IActionResult> InitiateBooking([FromBody] LocalHomeBookingModel booking)
+		{
+			var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized(new { IsSuccess = false, Message = "Invalid Token!" });
+			}
 
-		//	var query = _context.UserLocalHomeBookings
-		//		.Where(b => b.UserId == Guid.Parse(userId))
-		//		.OrderByDescending(b => b.Status)
-		//		.Skip((page - 1) * pageSize)
-		//		.Take(pageSize);
+			if (booking == null || booking.TotalDays <= 0)
+			{
+				return BadRequest(new { IsSuccess = false, Message = "Invalid booking details!" });
+			}
 
-		//	var bookings = await query.Select(b => new
-		//	{
-		//		b.Id,
-		//		b.LocalHomeId,
-		//		b.TotalDays,
-		//		b.TotalAmount,
-		//		b.Status,
-		//		b.PaymentIntentId
-		//	}).ToListAsync();
+			var localHome = await _context.LocalHomes.FindAsync(booking.LocalHomeId);
+			if (localHome == null || !localHome.IsAvailable)
+			{
+				return BadRequest(new { IsSuccess = false, Message = "Local home not available!" });
+			}
 
-		//	return Ok(new { IsSuccess = true, Bookings = bookings });
-		//}
+			// Calculate total cost
+			decimal totalCost = booking.TotalDays * localHome.PricePerNight;
 
-		//[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-		//[Authorize(Roles = "Tourist")]
-		//[HttpPost("add-feedback")]
-		//public async Task<IActionResult> AddFeedback([FromBody] FeedbackRequest request)
-		//{
-		//	var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-		//	if (string.IsNullOrEmpty(userId))
-		//	{
-		//		return Unauthorized(new DataSendingResponse { IsSuccess = false, Message = "Unauthorized action." });
-		//	}
+			var pendingBooking = new UserLocalHomeBooking
+			{
+				UserId = Guid.Parse(userId),
+				LocalHomeId = booking.LocalHomeId,
+				TotalAmount = totalCost,
+				Status = "Pending",
+				TotalDays = booking.TotalDays
+			};
 
-		//	var localHome = await _context.LocalHomes.FirstOrDefaultAsync(lh => lh.Id == request.ServiceId);
-		//	if (localHome == null)
-		//	{
-		//		return NotFound(new DataSendingResponse
-		//		{
-		//			IsSuccess = false,
-		//			Message = "Local home not found."
-		//		});
-		//	}
+			_context.UserLocalHomesBookings.Add(pendingBooking);
+			await _context.SaveChangesAsync();
 
-		//	var feedback = new Feedback
-		//	{
-		//		Id = Guid.NewGuid(),
-		//		UserId = Guid.Parse(userId),
-		//		ServiceType = Service.LocalHome.ToString(),
-		//		ServiceId = request.ServiceId,
-		//		FeedbackText = request.FeedbackText,
-		//		Rating = request.Rating,
-		//		Date = DateTime.Now
-		//	};
+			var paymentResult = await _paymentService.CreatePaymentIntent(pendingBooking.Id, "LocalHome", pendingBooking.TotalAmount);
+			var clientSecret = paymentResult?.GetType().GetProperty("clientSecret")?.GetValue(paymentResult)?.ToString();
 
-		//	_context.FeedBacks.Add(feedback);
-		//	await _context.SaveChangesAsync();
+			if (!string.IsNullOrEmpty(clientSecret))
+			{
+				return Ok(new { IsSuccess = true, BookingId = pendingBooking.Id, ClientSecret = clientSecret });
+			}
+			else
+			{
+				return BadRequest(new { IsSuccess = false, Message = "Failed to create payment intent!" });
+			}
+		}
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "Tourist")]
 
-		//	// Update average rating
-		//	var averageRating = await _context.FeedBacks
-		//		.Where(f => f.ServiceId == request.ServiceId && f.ServiceType == Service.LocalHome.ToString())
-		//		.AverageAsync(f => (decimal?)f.Rating) ?? 0;
+		[HttpPost("booking/payment-success")]
+		public async Task<IActionResult> PaymentSuccess([FromBody] PaymentSuccessDto paymentData)
+		{
+			if (paymentData == null || string.IsNullOrEmpty(paymentData.BookingId) || string.IsNullOrEmpty(paymentData.PaymentIntentId))
+			{
+				return BadRequest(new { IsSuccess = false, Message = "Invalid request data." });
+			}
 
-		//	localHome.Rating = ((float)averageRating);
-		//	_context.LocalHomes.Update(localHome);
-		//	await _context.SaveChangesAsync();
+			var bookingId = Guid.Parse(paymentData.BookingId);
+			var booking = await _context.UserLocalHomesBookings.FindAsync(bookingId);
 
-		//	return Ok(new DataSendingResponse
-		//	{
-		//		IsSuccess = true,
-		//		Data = feedback,
-		//		Message = "Feedback added and rating updated successfully."
-		//	});
-		//}
+			if (booking == null)
+			{
+				return NotFound(new { IsSuccess = false, Message = "Booking not found." });
+			}
 
-		//[HttpGet("get-feedback/{localHomeId}")]
-		//public async Task<IActionResult> GetFeedback(Guid localHomeId)
-		//{
-		//	var feedbacks = await _context.FeedBacks
-		//	.Where(f => f.ServiceId == localHomeId && f.ServiceType == Service.LocalHome.ToString())
-		//	.OrderByDescending(f => f.Date)
-		//	.Select(f => new {
-		//		f.FeedbackText,
-		//		f.Rating,
-		//		f.Date,
-		//		User = new
-		//		{
-		//			f.User.Id,
-		//			f.User.FullName
-		//		}
-		//	})
-		//	.ToListAsync();
+			using var transaction = await _context.Database.BeginTransactionAsync();
+			try
+			{
+				booking.Status = "Paid";
+				booking.PaymentIntentId = paymentData.PaymentIntentId;
+				_context.UserLocalHomesBookings.Update(booking);
+				await _context.SaveChangesAsync();
 
-		//	return Ok(new DataSendingResponse
-		//	{
-		//		IsSuccess = true,
-		//		Data = feedbacks,
-		//		Message = "Feedback retrieved successfully."
-		//	});
-		//}
+				string content = EmailTemplates.PaymentSuccessTemplate(booking.User.FullName, booking.TotalAmount.ToString(), booking.BookingDate.ToString(), booking.LocalHome.Name, booking.LocalHome.Description, booking.Status, booking.PaymentIntentId);
+				await _emailService.SendEmailAsync(booking.User.Email, "Booking Successful", content);
+
+				await transaction.CommitAsync();
+				return Ok(new { IsSuccess = true, Message = "Payment updated successfully. Confirmation email sent." });
+			}
+			catch
+			{
+				await transaction.RollbackAsync();
+				return BadRequest(new { IsSuccess = false, Message = "Payment processing failed." });
+			}
+
+		}
+
+		[HttpGet("user-bookings")]
+		public async Task<IActionResult> GetUserBookings([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+		{
+			var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized(new { IsSuccess = false, Message = "Invalid Token!" });
+			}
+
+			var query = _context.UserLocalHomesBookings
+				.Where(b => b.UserId == Guid.Parse(userId))
+				.OrderByDescending(b => b.Status)
+				.Skip((page - 1) * pageSize)
+				.Take(pageSize);
+
+			var bookings = await query.Select(b => new
+			{
+				b.Id,
+				b.LocalHomeId,
+				b.TotalDays,
+				b.TotalAmount,
+				b.Status,
+				b.PaymentIntentId
+			}).ToListAsync();
+
+			return Ok(new { IsSuccess = true, Bookings = bookings });
+		}
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "Tourist")]
+		[HttpPost("add-feedback")]
+		public async Task<IActionResult> AddFeedback([FromBody] FeedbackRequest request)
+		{
+			var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized(new DataSendingResponse { IsSuccess = false, Message = "Unauthorized action." });
+			}
+
+			var localHome = await _context.LocalHomes.FirstOrDefaultAsync(lh => lh.Id == request.ServiceId);
+			if (localHome == null)
+			{
+				return NotFound(new DataSendingResponse
+				{
+					IsSuccess = false,
+					Message = "Local home not found."
+				});
+			}
+
+			var feedback = new Feedback
+			{
+				Id = Guid.NewGuid(),
+				UserId = Guid.Parse(userId),
+				ServiceType = Service.LocalHome.ToString(),
+				ServiceId = request.ServiceId,
+				FeedbackText = request.FeedbackText,
+				Rating = request.Rating,
+				Date = DateTime.Now
+			};
+
+			_context.FeedBacks.Add(feedback);
+			await _context.SaveChangesAsync();
+
+			// Update average rating
+			var averageRating = await _context.FeedBacks
+				.Where(f => f.ServiceId == request.ServiceId && f.ServiceType == Service.LocalHome.ToString())
+				.AverageAsync(f => (decimal?)f.Rating) ?? 0;
+
+			localHome.Rating = ((float)averageRating);
+			_context.LocalHomes.Update(localHome);
+			await _context.SaveChangesAsync();
+
+			return Ok(new DataSendingResponse
+			{
+				IsSuccess = true,
+				Data = feedback,
+				Message = "Feedback added and rating updated successfully."
+			});
+		}
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "Tourist")]
+
+		[HttpGet("get-feedback/{localHomeId}")]
+		public async Task<IActionResult> GetFeedback(Guid localHomeId)
+		{
+			var feedbacks = await _context.FeedBacks
+			.Where(f => f.ServiceId == localHomeId && f.ServiceType == Service.LocalHome.ToString())
+			.OrderByDescending(f => f.Date)
+			.Select(f => new
+			{
+				f.FeedbackText,
+				f.Rating,
+				f.Date,
+				User = new
+				{
+					f.User.Id,
+					f.User.FullName
+				}
+			})
+			.ToListAsync();
+
+			return Ok(new DataSendingResponse
+			{
+				IsSuccess = true,
+				Data = feedbacks,
+				Message = "Feedback retrieved successfully."
+			});
+		}
 
 	}
 

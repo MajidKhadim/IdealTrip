@@ -5,6 +5,7 @@ using IdealTrip.Models.Package_Booking;
 using IdealTrip.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -26,7 +27,8 @@ namespace IdealTrip.Controllers
 		private readonly IHttpContextAccessor _httpContextAccessor;
 		private readonly PaymentService _paymentService;
 		private readonly EmailService _emailService;
-        public PackageController(ApplicationDbContext context, ILogger<PackageController> logger,IConfiguration configuration,IHttpContextAccessor httpContextAccessor,PaymentService service,IHubContext<NotificationHub> hubContext,EmailService emailService)
+		private readonly UserManager<ApplicationUser> _userManager;
+        public PackageController(ApplicationDbContext context, ILogger<PackageController> logger,IConfiguration configuration,IHttpContextAccessor httpContextAccessor,PaymentService service,IHubContext<NotificationHub> hubContext,EmailService emailService,UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _logger = logger;
@@ -35,6 +37,7 @@ namespace IdealTrip.Controllers
 			_paymentService = service;
 			_hubContext = hubContext;
 			_emailService = emailService;
+			_userManager = userManager;
         }
 
         [HttpGet]
@@ -97,6 +100,7 @@ namespace IdealTrip.Controllers
 		public async Task<IActionResult> InitiateBooking([FromBody] PackageBookingModel booking)
 		{
 			var userId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+			var user = await _userManager.FindByIdAsync(userId);
 			if (string.IsNullOrEmpty(userId))
 			{
 				return Unauthorized(new { IsSuccess = false, Message = "Invalid Token!" });
@@ -117,12 +121,12 @@ namespace IdealTrip.Controllers
 			var pendingBooking = new UsersPackageBooking
 			{
 				UserId = Guid.Parse(userId),
-				FullName = booking.FullName,
-				Email = booking.Email,
-				PhoneNumber = booking.PhoneNumber,
+				FullName = user.FullName,
+				Email = user.Email,
+				PhoneNumber = user.PhoneNumber,
 				NumberOfTravelers = booking.NumberOfTravelers,
 				PackageId = booking.PackageId,
-				TotalBill = booking.TotalBill,
+				TotalBill = (package.Price*booking.NumberOfTravelers),
 				Status = "Pending",
 			};
 
