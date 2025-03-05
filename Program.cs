@@ -13,6 +13,7 @@ using Azure.Storage.Blobs;
 using Microsoft.Extensions.Configuration;
 using System.Net.NetworkInformation;
 using Stripe;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,6 +57,42 @@ builder.Services.AddAuthentication(options =>
 		}
 	};
 });
+builder.Services.AddSwaggerGen(options =>
+{
+	options.SwaggerDoc("v1", new OpenApiInfo
+	{
+		Title = "IdealTrip API",
+		Version = "v1",
+		Description = "API documentation for the IdealTrip project",
+	});
+
+	// Add JWT Authentication to Swagger
+	options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+	{
+		Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer YOUR_TOKEN_HERE\"",
+		Name = "Authorization",
+		In = ParameterLocation.Header,
+		Type = SecuritySchemeType.Http,
+		Scheme = "Bearer"
+	});
+
+	options.AddSecurityRequirement(new OpenApiSecurityRequirement
+	{
+		{
+			new OpenApiSecurityScheme
+			{
+				Reference = new OpenApiReference
+				{
+					Type = ReferenceType.SecurityScheme,
+					Id = "Bearer"
+				}
+			},
+			new List<string>()
+		}
+	});
+});
+
+builder.Services.AddAuthorization();
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Logging.AddConsole();

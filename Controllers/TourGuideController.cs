@@ -170,7 +170,11 @@ namespace IdealTrip.Controllers
 			}
 
 			var bookingId = Guid.Parse(paymentData.BookingId);
-			var booking = await _context.UserTourGuideBookings.FindAsync(bookingId);
+			var booking = await _context.UserTourGuideBookings
+				.Include(b => b.User)      // Ensure User data is loaded
+				.Include(b => b.TourGuide) // Ensure TourGuide data is loaded
+				.FirstOrDefaultAsync(b => b.Id == bookingId);
+
 
 			if (booking == null)
 			{
