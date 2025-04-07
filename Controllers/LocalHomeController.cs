@@ -47,6 +47,10 @@ namespace IdealTrip.Controllers
 			{
 				return Unauthorized(new DataSendingResponse { IsSuccess = false, Message = "Unauthorized action." });
 			}
+			if (model.AvailableFrom >= model.AvailableTo)
+			{
+				return BadRequest(new DataSendingResponse { IsSuccess = false, Message = "AvalibleFrom date must be before AvalibleTo." });
+			}
 
 			var localHomeId = Guid.NewGuid();
 			var localHome = new LocalHome
@@ -150,6 +154,10 @@ namespace IdealTrip.Controllers
 			if(userId != home.OwnerId.ToString())
 			{
 				return Forbid();
+			}
+			if (updatedHome.AvailableFrom >= updatedHome.AvailableTo)
+			{
+				return BadRequest(new DataSendingResponse { IsSuccess = false, Message = "AvailableFrom date must be before AvailableTo." });
 			}
 
 			// ✅ Update Home Details
@@ -305,8 +313,8 @@ namespace IdealTrip.Controllers
 	[FromQuery] decimal? maxPrice = null,
 	[FromQuery] int? minCapacity = null,
 	[FromQuery] int? numberOfRooms = null,
-	[FromQuery] DateTime? startDate = null,
-	[FromQuery] DateTime? endDate = null)
+	[FromQuery] DateOnly? startDate = null,
+	[FromQuery] DateOnly? endDate = null)
 		{
 			var query = _context.LocalHomes.Where(h => h.IsAvailable);
 
@@ -327,23 +335,25 @@ namespace IdealTrip.Controllers
 			// Number of rooms filter
 			if (numberOfRooms.HasValue)
 				query = query.Where(h => h.NumberOfRooms >= numberOfRooms.Value);
+			if (startDate >= endDate)
+			{
+				return BadRequest(new DataSendingResponse { IsSuccess = false, Message = "start date must be before End Date." });
+			}
 
 			// Date availability filter
 			if (startDate.HasValue && endDate.HasValue)
 			{
-				// Check if the home is available for the entire requested period
 				query = query.Where(h =>
-					h.AvailableFrom <= startDate.Value &&  // Home available before/on start date
-					h.AvailableTo >= endDate.Value);      // Home available after/on end date
+					h.AvailableFrom <= startDate.Value &&  // Home available on/before start
+					h.AvailableTo >= endDate.Value         // Home available on/after end
+				);
 			}
 			else if (startDate.HasValue)
 			{
-				// If only startDate is provided, check if home is available from that date onwards
 				query = query.Where(h => h.AvailableTo >= startDate.Value);
 			}
 			else if (endDate.HasValue)
 			{
-				// If only endDate is provided, check if home is available until that date
 				query = query.Where(h => h.AvailableFrom <= endDate.Value);
 			}
 
@@ -360,8 +370,8 @@ namespace IdealTrip.Controllers
 				lh.Rating,
 				ImageUrl = _context.ServiceImages
 					.Where(img => img.ServiceId == lh.Id &&
-								  img.ServiceType == Service.LocalHome.ToString() &&
-								  img.IsPrimary)
+								 img.ServiceType == Service.LocalHome.ToString() &&
+								 img.IsPrimary)
 					.Select(img => img.ImageUrl)
 					.FirstOrDefault()
 			}).ToListAsync();
@@ -420,6 +430,55 @@ namespace IdealTrip.Controllers
 		}
 
 
+		//[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		//[Authorize(Roles = "Tourist")]
+		//[HttpPost("booking/initiate")]
+		//public async Task<IActionResult> InitiateBooking([FromBody] LocalHomeBookingModel booking)
+		//{
+		//	var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+		//	if (string.IsNullOrEmpty(userId))
+		//	{
+		//		return Unauthorized(new { IsSuccess = false, Message = "Invalid Token!" });
+		//	}
+
+		//	if (booking == null || booking.TotalDays <= 0)
+		//	{
+		//		return BadRequest(new { IsSuccess = false, Message = "Invalid booking details!" });
+		//	}
+
+		//	var localHome = await _context.LocalHomes.FindAsync(booking.LocalHomeId);
+		//	if (localHome == null || !localHome.IsAvailable )
+		//	{
+		//		return BadRequest(new { IsSuccess = false, Message = "Local home not available!" });
+		//	}
+
+		//	// Calculate total cost
+		//	decimal totalCost = booking.TotalDays * localHome.PricePerNight;
+
+		//	var pendingBooking = new UserLocalHomeBooking
+		//	{
+		//		UserId = Guid.Parse(userId),
+		//		LocalHomeId = booking.LocalHomeId,
+		//		TotalAmount = totalCost,
+		//		Status = "Pending",
+		//		TotalDays = booking.TotalDays
+		//	};
+
+		//	_context.UserLocalHomesBookings.Add(pendingBooking);
+		//	await _context.SaveChangesAsync();
+
+		//	var paymentResult = await _paymentService.CreatePaymentIntent(pendingBooking.Id, "LocalHome", pendingBooking.TotalAmount);
+		//	var clientSecret = paymentResult?.GetType().GetProperty("clientSecret")?.GetValue(paymentResult)?.ToString();
+
+		//	if (!string.IsNullOrEmpty(clientSecret))
+		//	{
+		//		return Ok(new { IsSuccess = true, BookingId = pendingBooking.Id, ClientSecret = clientSecret });
+		//	}
+		//	else
+		//	{
+		//		return BadRequest(new { IsSuccess = false, Message = "Failed to create payment intent!" });
+		//	}
+		//}
 		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 		[Authorize(Roles = "Tourist")]
 		[HttpPost("booking/initiate")]
@@ -431,15 +490,35 @@ namespace IdealTrip.Controllers
 				return Unauthorized(new { IsSuccess = false, Message = "Invalid Token!" });
 			}
 
-			if (booking == null || booking.TotalDays <= 0)
+			if (booking == null || booking.TotalDays <= 0 || booking.StartDate == null || booking.EndDate == null)
 			{
 				return BadRequest(new { IsSuccess = false, Message = "Invalid booking details!" });
 			}
+			if (booking.StartDate >= booking.EndDate)
+			{
+				return BadRequest(new DataSendingResponse { IsSuccess = false, Message = "Start date must be before End Date." });
+			}
 
 			var localHome = await _context.LocalHomes.FindAsync(booking.LocalHomeId);
-			if (localHome == null || !localHome.IsAvailable )
+			if (localHome == null || !localHome.IsAvailable)
 			{
 				return BadRequest(new { IsSuccess = false, Message = "Local home not available!" });
+			}
+
+			// Check if the home is available for the requested date range
+			var existingBookings = await _context.UserLocalHomesBookings
+				.Where(b => b.LocalHomeId == booking.LocalHomeId && b.Status == "Pending" || b.Status == "Confirmed")
+				.ToListAsync();
+
+			foreach (var existingBooking in existingBookings)
+			{
+				// Check if the booking period overlaps
+				if ((booking.StartDate >= existingBooking.StartDate && booking.StartDate <= existingBooking.EndDate) ||
+					(booking.EndDate >= existingBooking.StartDate && booking.EndDate <= existingBooking.EndDate) ||
+					(booking.StartDate <= existingBooking.StartDate && booking.EndDate >= existingBooking.EndDate))
+				{
+					return BadRequest(new { IsSuccess = false, Message = "Local home is already booked for the selected dates!" });
+				}
 			}
 
 			// Calculate total cost
@@ -451,6 +530,8 @@ namespace IdealTrip.Controllers
 				LocalHomeId = booking.LocalHomeId,
 				TotalAmount = totalCost,
 				Status = "Pending",
+				StartDate = booking.StartDate,   // Assuming StartDate and EndDate are part of LocalHomeBookingModel
+				EndDate = booking.EndDate,
 				TotalDays = booking.TotalDays
 			};
 
@@ -469,6 +550,7 @@ namespace IdealTrip.Controllers
 				return BadRequest(new { IsSuccess = false, Message = "Failed to create payment intent!" });
 			}
 		}
+
 		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 		[Authorize(Roles = "Tourist")]
 
