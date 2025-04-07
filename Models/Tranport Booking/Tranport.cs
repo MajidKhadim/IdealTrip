@@ -10,7 +10,8 @@ namespace IdealTrip.Models.Tranport_Booking
 		public string Type { get; set; } // "Private" or "Bus"
 		public int Capacity { get; set; }
 		public int SeatsAvailable { get; set; }
-		public string Route { get; set; }
+		public string StartLocation { get; set; }
+		public string Destination { get ; set; }
 		public DateTime DepartureTime { get; set; }
 		public decimal TicketPrice { get; set; } // Price per seat
 		public bool IsAvailable { get; set; }
@@ -19,6 +20,7 @@ namespace IdealTrip.Models.Tranport_Booking
 		[ForeignKey("OwnerId")]
 
 		public virtual ApplicationUser Owner { get; set; } // Navigation Property
+
 	}
 
 

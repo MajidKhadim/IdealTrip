@@ -13,8 +13,12 @@ namespace IdealTrip.Models.LocalHome_Booking
 
 		[Required]
 		public Guid LocalHomeId { get; set; }  // ID of the booked Local Home
+        [Required]
+        public DateOnly StartDate { get; set; }
+		[Required] 
+		public DateOnly EndDate { get; set; }
 
-		[Required]
+        [Required]
 		public int TotalDays { get; set; }  // Number of days booked
 
 		[Required]

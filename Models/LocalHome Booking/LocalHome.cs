@@ -17,8 +17,10 @@ namespace IdealTrip.Models.LocalHome_Booking
 		[Required]
 		[MaxLength(100)]
 		public string Name { get; set; }
-
 		[Required]
+		[Range(1, int.MaxValue, ErrorMessage = "NumberOfRooms must be greater than 0.")]
+		public int NumberOfRooms { get; set; }
+        [Required]
 		[MaxLength(1000)]
 		public string Description { get; set; }
 
@@ -48,10 +50,10 @@ namespace IdealTrip.Models.LocalHome_Booking
 		public int Capacity { get; set; }
 
 		[Required]
-		public DateTime AvailableFrom { get; set; }
+		public DateOnly AvailableFrom { get; set; }
 
 		[Required]
-		public DateTime AvailableTo { get; set; }
+		public DateOnly AvailableTo { get; set; }
 
 		public bool IsAvailable { get; set; }
 

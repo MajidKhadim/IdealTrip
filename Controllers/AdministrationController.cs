@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 namespace IdealTrip.Controllers
 {
 	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-	[Authorize(Roles ="Admin")]
+	[Authorize(Roles = "Admin")]
 	[Route("api/[controller]")]
 	public class AdministrationController : Controller
 	{
@@ -22,7 +22,7 @@ namespace IdealTrip.Controllers
 		private readonly ApplicationDbContext _context;
 		private readonly IUserService _userService;
 
-		public AdministrationController(UserManager<ApplicationUser> userManager, ApplicationDbContext context,IUserService userService)
+		public AdministrationController(UserManager<ApplicationUser> userManager, ApplicationDbContext context, IUserService userService)
 		{
 			_userManager = userManager;
 			_context = context;
@@ -42,7 +42,7 @@ namespace IdealTrip.Controllers
 				{
 					IsSuccess = true,
 					Message = "No pending users found.",
-					Data = {}
+					Data = { }
 				});
 			}
 
@@ -97,9 +97,12 @@ namespace IdealTrip.Controllers
 			user.Status = ProofStatus.Verified;
 
 			var result = await _userManager.UpdateAsync(user);
-			var tourguide = await _context.TourGuides.FirstOrDefaultAsync(tg => tg.User.Id.ToString() == guid);
-			tourguide.IsAvailable = true;
-			_context.Update(tourguide);
+			if(user.Role == "TourGuide")
+			{
+				var tourguide = await _context.TourGuides.FirstOrDefaultAsync(tg => tg.User.Id.ToString() == guid);
+				tourguide.IsAvailable = true;
+				_context.Update(tourguide);
+			}
 			if (result.Succeeded)
 			{
 				var sent = await _userService.SendAccountApprovedEmail(email);
@@ -190,7 +193,7 @@ namespace IdealTrip.Controllers
 			{
 				return NotFound(new DataSendingResponse
 				{
-					IsSuccess = false,
+					IsSuccess = true,
 					Message = "No users found.",
 					Data = null
 				});
@@ -373,5 +376,40 @@ namespace IdealTrip.Controllers
 			});
 		}
 
+
+		[HttpGet("user-bookings")]
+		public async Task<IActionResult> GetUsersBookings()
+		{
+			try
+			{
+				var tourGuideBookings = _context.UserTourGuideBookings.Count(tg => tg.Status == "Paid").ToString();
+				var packageBookings = _context.UsersPackages.Count(pb => pb.Status == "Paid").ToString();
+				var transportBookings = _context.UserTransportBookings.Count(tb => tb.Status == "Paid").ToString();
+				var localHomeBookings = _context.UserLocalHomesBookings.Count(tb => tb.Status == "Paid").ToString();
+				return Ok(new UserManagerResponse
+				{
+					IsSuccess = true,
+					Messege = "Data Retrived Successfully",
+					Data =
+					new
+					{
+						tourGuideBookings,
+						packageBookings,
+						transportBookings,
+						localHomeBookings
+					}
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new UserManagerResponse
+				{
+					Errors = new List<string> { "Server Internal Error" },
+					Messege = "Internal Server Error",
+
+				});
+
+			}
+		}
 	}
 }

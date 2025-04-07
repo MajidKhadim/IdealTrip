@@ -1,5 +1,6 @@
 ﻿using IdealTrip.Helpers;
 using IdealTrip.Models;
+using IdealTrip.Models.Database_Tables;
 using IdealTrip.Models.Enums;
 using IdealTrip.Models.LocalHome_Booking;
 using IdealTrip.Models.Package_Booking;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
@@ -24,12 +26,15 @@ namespace IdealTrip.Controllers
 		private readonly IHttpContextAccessor _contextAccessor;
 		private readonly PaymentService _paymentService;
 		private readonly EmailService _emailService;
+		private readonly IHubContext<NotificationHub> _hubContext;
 
-		public LocalHomeController(ApplicationDbContext context, IHttpContextAccessor contextAccessor, PaymentService paymentService)
+		public LocalHomeController(ApplicationDbContext context, IHttpContextAccessor contextAccessor, PaymentService paymentService, IHubContext<NotificationHub> hubContext,EmailService emailService)
 		{
 			_context = context;
 			_contextAccessor = contextAccessor;
 			_paymentService = paymentService;
+			_hubContext = hubContext;
+			_emailService = emailService;
 		}
 
 		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
@@ -57,7 +62,9 @@ namespace IdealTrip.Controllers
 				AvailableTo = model.AvailableTo,
 				CreatedAt = DateTime.Now,
 				UpdatedAt = DateTime.Now,
-				IsAvailable = true
+				IsAvailable = true,
+				NumberOfRooms = model.NumberOfRooms,
+				Rating = 0
 			};
 
 			_context.LocalHomes.Add(localHome);
@@ -154,6 +161,7 @@ namespace IdealTrip.Controllers
 			home.AvailableFrom = updatedHome.AvailableFrom;
 			home.AvailableTo = updatedHome.AvailableTo;
 			home.UpdatedAt = DateTime.Now;
+			home.NumberOfRooms = updatedHome.NumberOfRooms;
 
 			await _context.SaveChangesAsync(); // Save home details before updating images
 
@@ -291,22 +299,53 @@ namespace IdealTrip.Controllers
 		}
 
 		[HttpGet("GetLocalHomes")]
-		public async Task<IActionResult> GetLocalHomes([FromQuery] string? location = null, [FromQuery] decimal? minPrice = null, [FromQuery] decimal? maxPrice = null,
-[FromQuery] int? minCapacity = null)
+		public async Task<IActionResult> GetLocalHomes(
+	[FromQuery] string? location = null,
+	[FromQuery] decimal? minPrice = null,
+	[FromQuery] decimal? maxPrice = null,
+	[FromQuery] int? minCapacity = null,
+	[FromQuery] int? numberOfRooms = null,
+	[FromQuery] DateTime? startDate = null,
+	[FromQuery] DateTime? endDate = null)
 		{
 			var query = _context.LocalHomes.Where(h => h.IsAvailable);
 
+			// Location filter
 			if (!string.IsNullOrEmpty(location))
 				query = query.Where(h => h.AddressLine.Contains(location));
 
+			// Price range filter
 			if (minPrice.HasValue)
 				query = query.Where(h => h.PricePerNight >= minPrice.Value);
-
 			if (maxPrice.HasValue)
 				query = query.Where(h => h.PricePerNight <= maxPrice.Value);
 
+			// Capacity filter
 			if (minCapacity.HasValue)
 				query = query.Where(h => h.Capacity >= minCapacity.Value);
+
+			// Number of rooms filter
+			if (numberOfRooms.HasValue)
+				query = query.Where(h => h.NumberOfRooms >= numberOfRooms.Value);
+
+			// Date availability filter
+			if (startDate.HasValue && endDate.HasValue)
+			{
+				// Check if the home is available for the entire requested period
+				query = query.Where(h =>
+					h.AvailableFrom <= startDate.Value &&  // Home available before/on start date
+					h.AvailableTo >= endDate.Value);      // Home available after/on end date
+			}
+			else if (startDate.HasValue)
+			{
+				// If only startDate is provided, check if home is available from that date onwards
+				query = query.Where(h => h.AvailableTo >= startDate.Value);
+			}
+			else if (endDate.HasValue)
+			{
+				// If only endDate is provided, check if home is available until that date
+				query = query.Where(h => h.AvailableFrom <= endDate.Value);
+			}
 
 			var localHomes = await query.Select(lh => new
 			{
@@ -320,12 +359,12 @@ namespace IdealTrip.Controllers
 				lh.PricePerNight,
 				lh.Rating,
 				ImageUrl = _context.ServiceImages
-		.Where(img => img.ServiceId == lh.Id && img.ServiceType == Service.LocalHome.ToString() && img.IsPrimary)
-		.Select(img => img.ImageUrl)
-		.FirstOrDefault() // Returns a single image URL or null if not found
+					.Where(img => img.ServiceId == lh.Id &&
+								  img.ServiceType == Service.LocalHome.ToString() &&
+								  img.IsPrimary)
+					.Select(img => img.ImageUrl)
+					.FirstOrDefault()
 			}).ToListAsync();
-
-
 
 			return Ok(new UserManagerResponse
 			{
@@ -355,6 +394,7 @@ namespace IdealTrip.Controllers
 					lh.Capacity,
 					lh.PricePerNight,
 					lh.Rating,
+					lh.NumberOfRooms,
 					MainImage = _context.ServiceImages
 						.Where(img => img.ServiceId == lh.Id && img.ServiceType == Service.LocalHome.ToString() && img.IsPrimary)
 						.Select(img => img.ImageUrl)
@@ -397,7 +437,7 @@ namespace IdealTrip.Controllers
 			}
 
 			var localHome = await _context.LocalHomes.FindAsync(booking.LocalHomeId);
-			if (localHome == null || !localHome.IsAvailable)
+			if (localHome == null || !localHome.IsAvailable )
 			{
 				return BadRequest(new { IsSuccess = false, Message = "Local home not available!" });
 			}
@@ -442,9 +482,10 @@ namespace IdealTrip.Controllers
 
 			var bookingId = Guid.Parse(paymentData.BookingId);
 			var booking = await _context.UserLocalHomesBookings
-				.Include(b => b.User)      // Ensure User data is loaded
-				.Include(b => b.LocalHome) // Ensure TourGuide data is loaded
-				.FirstOrDefaultAsync(b => b.Id == bookingId);
+										.Include(b => b.User)
+										.Include(b => b.LocalHome)
+										.ThenInclude(lh => lh.Owner)  // Ensure Home Owner data is loaded
+										.FirstOrDefaultAsync(b => b.Id == bookingId);
 
 			if (booking == null)
 			{
@@ -454,24 +495,63 @@ namespace IdealTrip.Controllers
 			using var transaction = await _context.Database.BeginTransactionAsync();
 			try
 			{
+				// ✅ Update booking status and store PaymentIntentId
 				booking.Status = "Paid";
 				booking.PaymentIntentId = paymentData.PaymentIntentId;
 				_context.UserLocalHomesBookings.Update(booking);
 				await _context.SaveChangesAsync();
 
-				string content = EmailTemplates.PaymentSuccessTemplate(booking.User.FullName, booking.TotalAmount.ToString(), booking.BookingDate.ToString(), booking.LocalHome.Name, booking.LocalHome.Description, booking.Status, booking.PaymentIntentId);
-				await _emailService.SendEmailAsync(booking.User.Email, "Booking Successful", content);
+				// ✅ Real-time Notification to Home Owner
+				var homeOwnerNotificationMessage = $"🏠 Your local home '{booking.LocalHome.Name}' has been booked by {booking.User.FullName} for {booking.BookingDate:MMMM dd, yyyy}. 💳 Payment ID: {paymentData.PaymentIntentId}";
+				var homeOwnerNotification = new Notifications
+				{
+					UserId = booking.LocalHome.Owner.Id,
+					Messege = homeOwnerNotificationMessage
+				};
+				_context.Notifications.Add(homeOwnerNotification);
+				await _hubContext.Clients.User(booking.LocalHome.Owner.Id.ToString())
+								  .SendAsync("ReceiveNotification", homeOwnerNotificationMessage);
+
+				// ✅ Real-time Notification to User
+				var userNotificationMessage = $"🎉 Your booking for '{booking.LocalHome.Name}' is confirmed for {booking.BookingDate:MMMM dd, yyyy}! 💳 Payment ID: {paymentData.PaymentIntentId}";
+				var userNotification = new Notifications
+				{
+					UserId = booking.User.Id,
+					Messege = userNotificationMessage
+				};
+				_context.Notifications.Add(userNotification);
+				await _hubContext.Clients.User(booking.User.Id.ToString())
+								  .SendAsync("ReceiveNotification", userNotificationMessage);
+
+				// ✅ Notify All Users (if needed)
+				await _hubContext.Clients.All.SendAsync("ReceiveNotification",
+					$"📢 {booking.User.FullName} just booked a local home '{booking.LocalHome.Name}' for {booking.BookingDate:MMMM dd, yyyy}!");
+
+				await _context.SaveChangesAsync();
+
+				// ✅ Send Email Confirmation
+				string emailContent = EmailTemplates.PaymentSuccessTemplate(
+					booking.User.FullName,
+					booking.TotalAmount.ToString(),
+					booking.BookingDate.ToString("MMMM dd, yyyy"),
+					booking.LocalHome.Name,
+					booking.LocalHome.Description,
+					booking.Status,
+					booking.PaymentIntentId
+				);
+
+				await _emailService.SendEmailAsync(booking.User.Email, "Booking Successful", emailContent);
 
 				await transaction.CommitAsync();
-				return Ok(new { IsSuccess = true, Message = "Payment updated successfully. Confirmation email sent." });
+				return Ok(new { IsSuccess = true, Message = "Payment updated, notifications sent successfully." });
 			}
-			catch
+			catch (Exception ex)
 			{
 				await transaction.RollbackAsync();
-				return BadRequest(new { IsSuccess = false, Message = "Payment processing failed." });
+				return BadRequest(new { IsSuccess = false, Message = "Payment processing failed."});
 			}
-
 		}
+
 
 		[HttpGet("user-bookings")]
 		public async Task<IActionResult> GetUserBookings([FromQuery] int page = 1, [FromQuery] int pageSize = 10)

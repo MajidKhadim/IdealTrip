@@ -2,6 +2,7 @@
 using IdealTrip.Models.LocalHome_Booking;
 using IdealTrip.Models.Package_Booking;
 using IdealTrip.Models.TourGuide_Booking;
+using IdealTrip.Models.Tranport_Booking;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +27,10 @@ namespace IdealTrip.Models
 		public DbSet<LocalHome> LocalHomes { get; set; }
 		public DbSet<ServiceImage> ServiceImages { get; set; }
 		public DbSet<UserLocalHomeBooking> UserLocalHomesBookings { get; set; }
+
+		public DbSet<Transport> Transports { get; set; }
+		public DbSet<UserTransportBooking> UserTransportBookings { get; set; }
+		public DbSet<EmailBounce> EmailBounces { get; set; }
 		protected override void OnModelCreating(ModelBuilder builder)
 		{
 			base.OnModelCreating(builder);
@@ -75,6 +80,23 @@ namespace IdealTrip.Models
 				.WithMany()
 				.HasForeignKey(ulhb => ulhb.LocalHomeId)
 				.OnDelete(DeleteBehavior.NoAction);  // ❌ Prevent Cascade Delete
+			builder.Entity<UserTransportBooking>()
+		.HasOne(utb => utb.Transport)
+		.WithMany()
+		.HasForeignKey(utb => utb.TransportId)
+		.OnDelete(DeleteBehavior.NoAction); // Prevents cascade delete
+
+			builder.Entity<UserTransportBooking>()
+				.HasOne(utb => utb.User)
+				.WithMany()
+				.HasForeignKey(utb => utb.UserId)
+				.OnDelete(DeleteBehavior.NoAction); // Prevents cascade delete
+
+			builder.Entity<Transport>()
+				.HasOne(t => t.Owner)
+				.WithMany()
+				.HasForeignKey(t => t.OwnerId)
+				.OnDelete(DeleteBehavior.NoAction); // Prevents cascade delete
 			base.OnModelCreating(builder);
 		}
 

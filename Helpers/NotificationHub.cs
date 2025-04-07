@@ -6,7 +6,7 @@ namespace IdealTrip.Helpers
 	{
 		public async Task SendNotification(string messege)
 		{
-			await Clients.All.SendAsync("Recieve Notification", messege);
+			await Clients.All.SendAsync("RecieveNotification", messege);
 
 		}
 	}

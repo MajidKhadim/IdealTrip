@@ -44,8 +44,8 @@ namespace IdealTrip.Controllers
 		[AllowAnonymous]
         public async Task<IActionResult> GetPackages()
         {
-            try
-            {
+			try
+			{
                 var packages = await _context.Packages.ToListAsync();
                 return Ok(new UserManagerResponse
                 {
@@ -181,6 +181,7 @@ namespace IdealTrip.Controllers
 
 		//	return Ok(new DataSendingResponse { IsSuccess = true, Message = "Payment updated successfully." });
 		//}
+
 		[HttpPost("booking/payment-success")]
 		public async Task<IActionResult> PaymentSuccess([FromBody] PaymentSuccessDto paymentData)
 		{
@@ -200,53 +201,85 @@ namespace IdealTrip.Controllers
 				return NotFound(new DataSendingResponse { IsSuccess = false, Message = "Booking not found." });
 			}
 
-			// ✅ Update booking status and store PaymentIntentId
-			booking.Status = "Paid";
-			booking.PaymentIntentId = paymentData.PaymentIntentId;
-
-			_context.UsersPackages.Update(booking);
-			await _context.SaveChangesAsync();
-
-			// ✅ Send Real-time Notification (Admin)
-			var adminIds = await _context.Users
-										 .Where(u => u.Role == "Admin")
-										 .Select(u => u.Id)
-										 .ToListAsync();
-
-			var notificationMessage = $"📝 {booking.User.FullName} booked '{booking.Package.Title}' successfully. 💳 Payment ID: {paymentData.PaymentIntentId}";
-			foreach (var adminId in adminIds)
+			using var transaction = await _context.Database.BeginTransactionAsync();
+			try
 			{
-				var adminNotification = new Notifications
+				// ✅ Update booking status and store PaymentIntentId
+				booking.Status = "Paid";
+				booking.PaymentIntentId = paymentData.PaymentIntentId;
+
+				// ✅ Deduct available spots in the package
+				if (booking.Package.AvailableSpots >= booking.NumberOfTravelers)
 				{
-					UserId = adminId,
-					Messege = notificationMessage
+					booking.Package.AvailableSpots -= booking.NumberOfTravelers;
+				}
+				else
+				{
+					return BadRequest(new DataSendingResponse { IsSuccess = false, Message = "Not enough available spots!" });
+				}
+
+				_context.UsersPackages.Update(booking);
+				_context.Packages.Update(booking.Package);
+				await _context.SaveChangesAsync();
+
+				// ✅ Send Real-time Notification (Admin)
+				var adminIds = await _context.Users
+											 .Where(u => u.Role == "Admin")
+											 .Select(u => u.Id)
+											 .ToListAsync();
+
+				var notificationMessage = $"📝 {booking.User.FullName} booked '{booking.Package.Title}' successfully. 💳 Payment ID: {paymentData.PaymentIntentId}";
+				foreach (var adminId in adminIds)
+				{
+					var adminNotification = new Notifications
+					{
+						UserId = adminId,
+						Messege = notificationMessage
+					};
+					_context.Notifications.Add(adminNotification);
+
+					// 🚀 Send real-time notification to Admin
+					await _hubContext.Clients.User(adminId.ToString())
+									  .SendAsync("ReceiveNotification", adminNotification.Messege);
+				}
+
+				// 🎉 User Notification (Real-time)
+				var userNotificationMessage = $"🎉 Your booking for '{booking.Package.Title}' is confirmed! 💳 Payment ID: {paymentData.PaymentIntentId}";
+				var userNotification = new Notifications
+				{
+					UserId = booking.User.Id,
+					Messege = userNotificationMessage
 				};
-				_context.Notifications.Add(adminNotification);
+				_context.Notifications.Add(userNotification);
+				await _hubContext.Clients.User(booking.User.Id.ToString())
+								  .SendAsync("ReceiveNotification", userNotificationMessage);
 
-				// 🚀 Real-time notification
-				await _hubContext.Clients.User(adminId.ToString())
-								  .SendAsync("ReceiveNotification", adminNotification.Messege);
+				// ✅ Fix: Send Notification to All Users
+				await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"📢 New Booking: {booking.User.FullName} booked '{booking.Package.Title}'!");
+
+				await _context.SaveChangesAsync();
+
+				// ✅ Send Email Confirmation
+				var emailContent = EmailTemplates.PaymentSuccessTemplate(
+					booking.User.FullName,
+					booking.TotalBill.ToString(),
+					DateTime.Now.ToString(),
+					booking.Package.Title,
+					booking.Package.Description,
+					booking.Status,
+					booking.PaymentIntentId
+				);
+
+				await _emailService.SendEmailAsync(booking.User.Email, "Booking Successful", emailContent);
+
+				await transaction.CommitAsync();
+				return Ok(new DataSendingResponse { IsSuccess = true, Message = "Payment updated, spots deducted, and notifications sent successfully." });
 			}
-
-			// 🎉 User Notification (Real-time)
-			var userNotificationMessage = $"🎉 Your booking for '{booking.Package.Title}' is confirmed! 💳 Payment ID: {paymentData.PaymentIntentId}";
-			var userNotification = new Notifications
+			catch (Exception ex)
 			{
-				UserId = booking.User.Id,
-				Messege = userNotificationMessage
-			};
-			_context.Notifications.Add(userNotification);
-			await _hubContext.Clients.User(booking.User.Id.ToString())
-							  .SendAsync("ReceiveNotification", userNotificationMessage);
-
-			await _context.SaveChangesAsync();
-			var emailContent = EmailTemplates.PaymentSuccessTemplate(booking.User.FullName, booking.TotalBill.ToString(), DateTime.Now.ToString(), booking.Package.Title, booking.Package.Description, booking.Status, booking.PaymentIntentId);
-			await _emailService.SendEmailAsync(booking.User.Email,"Booking SuccessFul",emailContent);
-
-			return Ok(new DataSendingResponse { IsSuccess = true, Message = "Payment updated and latest notifications sent successfully." });
+				await transaction.RollbackAsync();
+				return BadRequest(new DataSendingResponse { IsSuccess = false, Message = "Payment processing failed.", Errors = [ex.Message] });
+			}
 		}
-
-
-
 	}
 }

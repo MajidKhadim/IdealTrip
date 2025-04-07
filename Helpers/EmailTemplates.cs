@@ -441,7 +441,7 @@
             </div>
 
             <div class='transaction-info'>
-                <p><strong>Amount Paid:</strong> ${paymentAmount}</p>
+                <p><strong>Amount Paid:</strong> {paymentAmount}RS.</p>
                 <p><strong>Payment Date:</strong> {paymentDate}</p>
                 <p><strong>Status:</strong> {paymentStatus}</p>
                 <p><strong>Transaction ID:</strong> {transactionId}</p>

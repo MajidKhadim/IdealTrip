@@ -21,14 +21,16 @@ namespace IdealTrip.Models.LocalHome_Booking
 		[Required]
 		[Column(TypeName = "decimal(18,2)")]
 		public decimal PricePerNight { get; set; }
+        [Required]
+        public int NumberOfRooms { get; set; }
 
-		public int Capacity { get; set; }
+        public int Capacity { get; set; }
 
 		[Required]
-		public DateTime AvailableFrom { get; set; }
+		public DateOnly AvailableFrom { get; set; }
 
 		[Required]
-		public DateTime AvailableTo { get; set; }
+		public DateOnly AvailableTo { get; set; }
 
 		/// <summary>
 		/// Primary image for the local home

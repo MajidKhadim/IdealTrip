@@ -51,7 +51,7 @@ namespace IdealTrip.Controllers
 						await _userService.DeleteUser(model.Email);
 						return BadRequest(new UserManagerResponse
 						{
-							Messege = "Something went wrong while sending OTP. Please try again.",
+							Messege = "Something went wrong while sending Verification Email. Please try again.",
 							IsSuccess = false
 						});
 					}
@@ -428,6 +428,20 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
+		[HttpGet("email-status")]
+		public async Task<IActionResult> GetEmailStatus(string email)
+		{
+			var user = await _userService.GetEmailStatus(email);
+			if (user == null) return NotFound();
+
+			return Ok(new
+			{
+				isConfirmed = user.EmailConfirmed,
+				isBounced = user.IsEmailBounced,
+				reason = user.BounceReason
+			});
+		}
+
 
 	}
 }

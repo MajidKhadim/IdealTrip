@@ -75,5 +75,30 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "Admin")]
+		[HttpGet("{userId}")]
+		public async Task<IActionResult> GetUserDetails(string userId)
+		{
+			try
+			{
+				var result = await _userService.GetUserDetails(userId);
+				if (result.IsSuccess)
+				{
+					return Ok(result);
+				}
+				return BadRequest(result);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(505, new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = "Internal Server Error",
+					Errors = new List<string> { "Internal Server Error" }
+				});
+			}
+		}
+
 	}
 }

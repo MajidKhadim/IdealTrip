@@ -13,6 +13,8 @@ using System.Collections.Concurrent;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using IdealTrip.Models.TourGuide_Booking;
+using Microsoft.EntityFrameworkCore;
+using Stripe.Terminal;
 
 namespace IdealTrip.Services
 {
@@ -27,14 +29,15 @@ namespace IdealTrip.Services
 		Task<UserManagerResponse> DeleteUser(string userEmail);
 		Task<UserManagerResponse> UpdateUser(UpdateUserModel model,string Id);
 		Task<UserManagerResponse> ResetPasswordAsync(ResetPasswordModel model);
-
 		Task<bool> IsAdmin(string email);
 		Task<UserManagerResponse> GetUserInfo(string userId);
-
+		Task<object> GetTourGuideDetails(string userId);
+		Task<UserManagerResponse> GetUserDetails(string userId);
 		Task<UserManagerResponse> ConfirmEmail(string userId,string token);
 		public Task<bool> SendEmailVerificationAsync(string email);
 		Task<UserManagerResponse> SendAccountApprovedEmail(string email);
 		Task<UserManagerResponse> SendAccountRejectedEmail(string email);
+		Task<ApplicationUser?> GetEmailStatus(string email);
 	}
 
 	public class UserService : IUserService
@@ -742,6 +745,7 @@ namespace IdealTrip.Services
 			var result = await _userManager.ConfirmEmailAsync(user, token);
 			if (result.Succeeded)
 			{
+				user.IsEmailBounced = false;
 				string link;
 				var frontendUrl = _config.GetValue<string>("Front_Url");
 				var roles = await _userManager.GetRolesAsync(user);
@@ -1182,7 +1186,7 @@ namespace IdealTrip.Services
 		{
 			var user = await _userManager.FindByEmailAsync(userEmail);
 			if (user == null)
-				return new UserManagerResponse { IsSuccess = false, Messege = "User not found." };
+				return new UserManagerResponse { IsSuccess = true, Messege = "User not found." };
 
 			var result = await _userManager.DeleteAsync(user);
 			return result.Succeeded
@@ -1209,10 +1213,11 @@ namespace IdealTrip.Services
 					Messege = "User retrived Successfully",
 					Data = new
 					{
-						Email = user.Email,
-						UserName = user.UserName,
-						Address = user.Address,
-						ProfilePhotoUrl = user.ProfilePhotoPath
+						user.Email,
+						user.UserName,
+						user.Address,
+						user.ProfilePhotoPath,
+						user.Role
 					}
 				};
 			}
@@ -1226,6 +1231,72 @@ namespace IdealTrip.Services
 				};
 			}
 		}
+
+		public async Task<object> GetTourGuideDetails(string userId)
+		{
+			var tourGuide = await _context.TourGuides.FirstOrDefaultAsync(tg => tg.UserId.ToString() == userId);
+			if (tourGuide == null) return null;
+
+			return new
+			{
+				tourGuide.RatePerDay,
+				tourGuide.Experience,
+				tourGuide.Bio,
+				tourGuide.Location,
+			};
+		}
+		[HttpGet("email-status")]
+		public async Task<ApplicationUser?> GetEmailStatus(string email)
+		{
+			var user = await _userManager.FindByEmailAsync(email);
+			if (user == null) return null;
+
+			return user;
+		}
+
+
+		public async Task<UserManagerResponse> GetUserDetails(string userId)
+		{
+				// Get basic user info
+				var userInfoResponse = await GetUserInfo(userId);
+				if (!userInfoResponse.IsSuccess)
+				{
+					return userInfoResponse; // Return if user not found or an error occurred
+				}
+
+				var userData = userInfoResponse.Data as dynamic;
+				var userRole = userData.Role; // Convert role to string if necessary
+
+				object roleSpecificData = null;
+				List<Proof> proofs = new List<Proof>();
+
+				if (userRole == "TourGuide")
+				{
+					// Fetch additional details for TourGuide
+					roleSpecificData = await GetTourGuideDetails(userId);
+				}
+
+				proofs = await _context.Proofs.Where(p => p.UserId.ToString() == userId).ToListAsync();
+
+				return new UserManagerResponse
+				{
+					IsSuccess = true,
+					Messege = "User details retrieved successfully",
+					Data = new
+					{
+						User = userData,
+						RoleSpecificDetails = roleSpecificData,
+						Proofs = proofs.Select(p => new
+						{
+							p.DocumentType,  // Adjust fields according to your Proofs table
+							p.DocumentPath
+						})
+					}
+				};
+			}
+		}
+
+
 		//public async Task<UserManagerResponse> GetUser()
 		//{
 		//	try
@@ -1272,4 +1343,3 @@ namespace IdealTrip.Services
 		public string Messege { get; set; }
 		public string Path { get; set; }
 	}
-}

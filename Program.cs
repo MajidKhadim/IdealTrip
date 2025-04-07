@@ -97,10 +97,28 @@ builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 builder.Logging.AddConsole();
 builder.Configuration.AddEnvironmentVariables();
-builder.Services.AddCors(options => options.AddPolicy("AllowAnyOrigin",
-	builder => builder.AllowAnyOrigin()
-	.AllowAnyHeader()
-	.AllowAnyMethod()));
+builder.Services.AddCors(options =>
+{
+	options.AddPolicy("AllowMultipleOrigins", builder =>
+		builder
+			.WithOrigins(
+				"http://127.0.0.1:5500",
+				"https://127.0.0.1:5500",
+				"http://localhost:3000",
+				"https://localhost:3000",
+				"http://localhost:3001",
+				"https://localhost:3001",
+				"https://localhost:7216",
+				"http://localhost:7216"
+			)
+			.AllowAnyHeader()
+			.AllowAnyMethod()
+			.AllowCredentials() // ? Important for WebSockets
+	);
+});
+
+
+
 var stripeConfig = builder.Configuration.GetSection("Stripe");
 StripeConfiguration.ApiKey = stripeConfig["SecretKey"];
 string azureBlobStorageConnectionString = builder.Configuration["AzureBlobStorage:ConnectionString"];
@@ -142,7 +160,8 @@ app.UseStaticFiles();
 app.MapHub<NotificationHub>("/notificationhub");
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAnyOrigin");
+app.UseCors("AllowMultipleOrigins");
+app.UseWebSockets();
 app.UseAuthentication();
 
 app.UseAuthorization();
