@@ -3,8 +3,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace IdealTrip.Models.Hotels
 {
-	public class HotelRoomBooking
-	{
+    public class UserHotelRoomBooking
+    {
+        [Key]
         public Guid BookingId { get; set; }
         [ForeignKey("HotelRoom")]
         public Guid RoomId { get; set; }
@@ -19,9 +20,9 @@ namespace IdealTrip.Models.Hotels
 
         public int TotalDays { get; set; }
         [Required]
-		public string PaymentIntentId { get; set; }
-		public string Status { get; set; } // "Pending", "Paid", "Cancelled"
-        public DateTime BookingTIme { get; set; }
+        public string PaymentIntentId { get; set; }
+        public string Status { get; set; } // "Pending", "Paid", "Cancelled"
+        public DateTime BookingTime { get; set; }
 
     }
 }

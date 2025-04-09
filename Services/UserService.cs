@@ -857,7 +857,13 @@ namespace IdealTrip.Services
 			return new UserManagerResponse
 			{
 				IsSuccess = true,
-				Messege = new JwtSecurityTokenHandler().WriteToken(token)
+				Messege = new JwtSecurityTokenHandler().WriteToken(token),
+				Data =
+				new {
+					userId = user.Id,
+					role = user.Role,
+					email = user.Email,
+				}
 			};
 		}
 

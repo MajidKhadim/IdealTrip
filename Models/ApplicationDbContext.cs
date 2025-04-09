@@ -1,4 +1,5 @@
 ﻿using IdealTrip.Models.Database_Tables;
+using IdealTrip.Models.Hotels;
 using IdealTrip.Models.LocalHome_Booking;
 using IdealTrip.Models.Package_Booking;
 using IdealTrip.Models.TourGuide_Booking;
@@ -10,16 +11,16 @@ using Microsoft.Identity.Client;
 using System.Reflection.Emit;
 namespace IdealTrip.Models
 {
-	public class ApplicationDbContext : IdentityDbContext<ApplicationUser,IdentityRole<Guid>,Guid>
+	public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
 	{
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
-        {
-            
-        }
-        public DbSet<Proof> Proofs { get; set; }
+		public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+		{
+
+		}
+		public DbSet<Proof> Proofs { get; set; }
 		public DbSet<Package> Packages { get; set; }
 		public DbSet<UsersPackageBooking> UsersPackages { get; set; }
-		public DbSet<TourGuide> TourGuides { get ; set; }
+		public DbSet<TourGuide> TourGuides { get; set; }
 		public DbSet<Notifications> Notifications { get; set; }
 
 		public DbSet<UserTourGuideBooking> UserTourGuideBookings { get; set; }
@@ -31,6 +32,10 @@ namespace IdealTrip.Models
 		public DbSet<Transport> Transports { get; set; }
 		public DbSet<UserTransportBooking> UserTransportBookings { get; set; }
 		public DbSet<EmailBounce> EmailBounces { get; set; }
+		public DbSet<Hotel> Hotels { get; set; }
+		public DbSet<HotelRoom> HotelRooms { get; set; }
+		public DbSet<UserHotelRoomBooking> UserHotelRoomBookings { get; set; }
+
 		protected override void OnModelCreating(ModelBuilder builder)
 		{
 			base.OnModelCreating(builder);
@@ -97,7 +102,20 @@ namespace IdealTrip.Models
 				.WithMany()
 				.HasForeignKey(t => t.OwnerId)
 				.OnDelete(DeleteBehavior.NoAction); // Prevents cascade delete
+			builder.Entity<UserHotelRoomBooking>()
+		.HasOne(b => b.HotelRoom)
+		.WithMany()
+		.HasForeignKey(b => b.RoomId)
+		.OnDelete(DeleteBehavior.Restrict); // or DeleteBehavior.NoAction
+
+			// Disable cascade delete for HotelRoomBooking -> Tourist
+			builder.Entity<UserHotelRoomBooking>()
+				.HasOne(b => b.Tourist)
+				.WithMany()
+				.HasForeignKey(b => b.UserId)
+				.OnDelete(DeleteBehavior.Restrict);
 			base.OnModelCreating(builder);
+
 		}
 
 	}

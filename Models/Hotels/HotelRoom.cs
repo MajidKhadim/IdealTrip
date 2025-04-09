@@ -1,18 +1,20 @@
 ﻿using IdealTrip.Models.Enums;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace IdealTrip.Models.Hotels
 {
-	public class HotelRoom
-	{
+    public class HotelRoom
+    {
+        [Key]
         public Guid RoomId { get; set; }
         public RoomType RoomType { get; set; }
         public decimal PricePerNight { get; set; }
-        [Range(1,int.MaxValue,ErrorMessage ="Capacity Can't be 0 or less than 0")]
+        [Range(1, int.MaxValue, ErrorMessage = "Capacity Can't be 0 or less than 0")]
         public int Capacity { get; set; }
-		[Range(1, int.MaxValue, ErrorMessage = "NumberOfBeds Can't be 0 or less than 0")]
-		public int NumberOfBeds { get; set; }
+        [Range(1, int.MaxValue, ErrorMessage = "NumberOfBeds Can't be 0 or less than 0")]
+        public int NumberOfBeds { get; set; }
         public bool IsAvailable { get; set; }
 
         [ForeignKey("Hotel")]
