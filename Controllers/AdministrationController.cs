@@ -308,7 +308,7 @@ namespace IdealTrip.Controllers
 			{
 				return NotFound(new DataSendingResponse
 				{
-					IsSuccess = false,
+					IsSuccess = true,
 					Message = "No users added in the last 30 days.",
 					Data = null
 				});
@@ -362,7 +362,7 @@ namespace IdealTrip.Controllers
 			{
 				return NotFound(new DataSendingResponse
 				{
-					IsSuccess = false,
+					IsSuccess = true,
 					Message = "No users found in the database.",
 					Data = null
 				});
