@@ -461,6 +461,243 @@
 </body>
 </html>";
 		}
+		public static string HotelBookingSuccessTemplate(
+	string touristName,
+	string touristEmail,
+	string hotelName,
+	string roomType,
+	decimal totalAmount,
+	string paymentId,
+	string checkInDate,
+	string checkOutDate,
+	string bookingStatus,
+    DateTime bookingTime
+)
+		{
+			return $@"
+    <html>
+    <head>
+        <style>
+            body {{
+                font-family: 'Segoe UI', sans-serif;
+                background-color: #f4f4f4;
+                padding: 20px;
+                color: #333;
+            }}
+            .email-container {{
+                max-width: 600px;
+                margin: auto;
+                background: #ffffff;
+                padding: 30px;
+                border-radius: 10px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }}
+            h2 {{
+                color: #2c3e50;
+            }}
+            .booking-details {{
+                margin-top: 20px;
+            }}
+            .booking-details p {{
+                margin: 10px 0;
+                line-height: 1.6;
+            }}
+            .footer {{
+                margin-top: 30px;
+                font-size: 0.9em;
+                color: #888;
+                text-align: center;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class='email-container'>
+            <h2>🎉 Hotel Booking Confirmed</h2>
+            <p>Hi {touristName},</p>
+            <p>We're thrilled to let you know that your hotel booking has been successfully confirmed. Below are your booking details:</p>
+
+            <div class='booking-details'>
+                <p><strong>Hotel Name:</strong> {hotelName}</p>
+                <p><strong>Room Type:</strong> {roomType}</p>
+                <p><strong>Check-In:</strong> {checkInDate}</p>
+                <p><strong>Check-Out:</strong> {checkOutDate}</p>
+                <p><strong>Total Amount Paid:</strong> ₹{totalAmount}</p>
+                <p><strong>Payment ID:</strong> {paymentId}</p>
+                <p><strong>Status:</strong> {bookingStatus}</p>
+                <p><strong>Booking Time:</strong> {bookingTime}</p>
+            </div>
+
+            <p>If you have any questions or changes to your reservation, feel free to contact us at <a href='mailto:support@idealtrip.com'>support@idealtrip.com</a>.</p>
+
+            <p>Thank you for choosing Ideal Trip. We wish you a comfortable and enjoyable stay!</p>
+
+            <div class='footer'>
+                &copy; {DateTime.Now.Year} Ideal Trip. All rights reserved.
+            </div>
+        </div>
+    </body>
+    </html>
+    ";
+		}
+		public static string TourGuideBookingSuccessTemplate(
+	string touristName,
+	string tourGuideName,
+	string tourGuideBio,
+	string startDate,
+	string endDate,
+	int numberOfTravelers,
+	decimal totalAmount,
+	string paymentId,
+	int totalDays,
+	string status,
+    DateTime bookingTime
+)
+		{
+			return $@"
+    <html>
+    <head>
+        <style>
+            body {{
+                font-family: 'Segoe UI', sans-serif;
+                background-color: #f4f4f4;
+                padding: 20px;
+                color: #333;
+            }}
+            .email-container {{
+                max-width: 600px;
+                margin: auto;
+                background: #ffffff;
+                padding: 30px;
+                border-radius: 10px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }}
+            h2 {{
+                color: #2c3e50;
+            }}
+            .booking-details {{
+                margin-top: 20px;
+            }}
+            .booking-details p {{
+                margin: 10px 0;
+                line-height: 1.6;
+            }}
+            .footer {{
+                margin-top: 30px;
+                font-size: 0.9em;
+                color: #888;
+                text-align: center;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class='email-container'>
+            <h2>🎉 Tour Guide Booking Confirmed</h2>
+            <p>Hi {touristName},</p>
+            <p>Thank you for booking your tour with <strong>{tourGuideName}</strong>. Your booking has been successfully confirmed! 🎒</p>
+
+            <div class='booking-details'>
+                <p><strong>Tour Guide:</strong> {tourGuideName}</p>
+                <p><strong>Guide Bio:</strong> {tourGuideBio}</p>
+                <p><strong>Start Date:</strong> {startDate}</p>
+                <p><strong>End Date:</strong> {endDate}</p>
+                <p><strong>Total Days:</strong> {totalDays}</p>
+                <p><strong>Number of Travelers:</strong> {numberOfTravelers}</p>
+                <p><strong>Total Amount Paid:</strong> ₹{totalAmount}</p>
+                <p><strong>Payment ID:</strong> {paymentId}</p>
+                <p><strong>Status:</strong> {status}</p>
+                <p><strong>Booking Time: </strong>{bookingTime}</p>
+            </div>
+
+            <p>If you have any questions or special requests, feel free to reach out to your guide or contact us at <a href='mailto:support@idealtrip.com'>support@idealtrip.com</a>.</p>
+
+            <p>We hope you have an amazing and unforgettable journey!</p>
+
+            <div class='footer'>
+                &copy; {DateTime.Now.Year} Ideal Trip. All rights reserved.
+            </div>
+        </div>
+    </body>
+    </html>
+    ";
+		}
+		public static string LocalHomeBookingSuccessTemplate(
+	string userName,
+	string homeName,
+	string homeDescription,
+	DateOnly checkInDate,
+	DateOnly checkOutDate,
+	int totalNights,
+	string totalAmount,
+	string paymentIntentId,
+	string status,
+    DateTime bookingTime
+)
+		{
+			return $@"
+		<h2>🏠 Local Home Booking Confirmation</h2>
+		<p>Hi <strong>{userName}</strong>,</p>
+		<p>We’re excited to let you know that your local home booking has been <strong>successfully confirmed</strong>!</p>
+		
+		<h3>🏡 Home Details:</h3>
+		<ul>
+			<li><strong>Name:</strong> {homeName}</li>
+			<li><strong>Description:</strong> {homeDescription}</li>
+			<li><strong>Check-In:</strong> {checkInDate:MMMM dd, yyyy}</li>
+			<li><strong>Check-Out:</strong> {checkOutDate:MMMM dd, yyyy}</li>
+			<li><strong>Total Nights:</strong> {totalNights}</li>
+			<li><strong>Total Amount Paid:</strong> ₹{totalAmount}</li>
+			<li><strong>Payment ID:</strong> {paymentIntentId}</li>
+			<li><strong>Status:</strong> {status}</li>
+            <li><strong>Booking Time:</strong> {bookingTime}</li>
+		</ul>
+
+		<p>🛏 Your stay is reserved and ready to welcome you!</p>
+		<p>If you have any questions or need assistance, feel free to contact us anytime.</p>
+		<p>Thank you for choosing <strong>IdealTrip</strong> — we wish you a wonderful stay!</p>
+	";
+		}
+		public static string TransportBookingSuccessTemplate(
+	string userName,
+	string transportName,
+	string transportType,
+	string from,
+	string to,
+	DateTime departureTime,
+	DateTime bookingDate,
+	int seatsBooked,
+	string totalAmount,
+	string paymentIntentId,
+	string status
+)
+		{
+			string emoji = transportType.ToLower() == "bus" ? "🚌" : "🚗";
+
+			return $@"
+		<h2>{emoji} Transport Booking Confirmation</h2>
+		<p>Hi <strong>{userName}</strong>,</p>
+		<p>We’re happy to confirm your <strong>{transportType}</strong> transport booking! Here are your trip details:</p>
+
+		<h3>🛣 Journey Details:</h3>
+		<ul>
+			<li><strong>Transport:</strong> {transportName}</li>
+			<li><strong>Type:</strong> {transportType}</li>
+			<li><strong>From:</strong> {from}</li>
+			<li><strong>To:</strong> {to}</li>
+			<li><strong>Departure Time:</strong> {departureTime:MMMM dd, yyyy | hh:mm tt}</li>
+			<li><strong>Booking Date:</strong> {bookingDate:MMMM dd, yyyy}</li>
+			<li><strong>Seats Booked:</strong> {seatsBooked}</li>
+			<li><strong>Total Fare:</strong> ₹{totalAmount}</li>
+			<li><strong>Payment ID:</strong> {paymentIntentId}</li>
+			<li><strong>Status:</strong> {status}</li>
+		</ul>
+
+		<p>🎫 Your seats are reserved and confirmed. Please be at the pickup point at least 15 minutes before departure.</p>
+		<p>Thank you for choosing <strong>IdealTrip</strong> for your journey. Have a safe and pleasant ride!</p>
+	";
+		}
+
+
+
 
 
 	}

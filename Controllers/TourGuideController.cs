@@ -142,10 +142,11 @@ namespace IdealTrip.Controllers
 			catch (Exception ex)
 			{
 				_logger.LogError($"Error while fetching tour guides data: {ex.Message}");
-				return StatusCode(500, new UserManagerResponse
+				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Messege = "Something went wrong!"
+					Message = "Internal Server Error",
+					Errors = new List<string> { ex.Message }
 				});
 			}
 		}
@@ -186,10 +187,11 @@ namespace IdealTrip.Controllers
 			catch(Exception ex)
 			{
 				_logger.LogError($"Error while fetching Tour Guide data : {ex.Message}");
-				return StatusCode(500, new UserManagerResponse
+				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Messege = "Internal Server Error"
+					Message = "Internal Server Error",
+					Errors = new List<string> { ex.Message }
 				});
 			}
 		}
@@ -243,63 +245,84 @@ namespace IdealTrip.Controllers
 		[HttpPost("booking/initiate")]
 		public async Task<IActionResult> InitiateBooking([FromBody] TourGuideBookingModel booking)
 		{
-			var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-			if (string.IsNullOrEmpty(userId))
+			if (!ModelState.IsValid)
 			{
-				return Unauthorized(new { IsSuccess = false, Message = "Invalid Token!" });
+				return BadRequest(new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = "Invalid Data",
+					Errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList()
+				});
 			}
-
-			if (booking == null || booking.TotalDays <= 0 || booking.StartDate == default || booking.EndDate == default)
+			try
 			{
-				return BadRequest(new { IsSuccess = false, Message = "Invalid booking details!" });
+				var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+				if (string.IsNullOrEmpty(userId))
+				{
+					return Unauthorized(new { IsSuccess = false, Message = "Invalid Token!" });
+				}
+
+				if (booking == null || booking.TotalDays <= 0 || booking.StartDate == default || booking.EndDate == default)
+				{
+					return BadRequest(new { IsSuccess = false, Message = "Invalid booking details!" });
+				}
+
+				var tourGuide = await _context.TourGuides.FindAsync(booking.TourGuideId);
+				if (tourGuide == null || !tourGuide.IsAvailable)
+				{
+					return BadRequest(new { IsSuccess = false, Message = "Tour guide not available!" });
+				}
+
+				// 🛑 Check for conflicting bookings (with "Paid" status)
+				var conflictingBooking = await _context.UserTourGuideBookings
+					.Where(b => b.TourGuideId == booking.TourGuideId && b.Status == BookingStatus.Paid.ToString())
+					.Where(b => booking.StartDate <= b.EndDate && booking.EndDate >= b.StartDate)
+					.FirstOrDefaultAsync();
+
+				if (conflictingBooking != null)
+				{
+					return BadRequest(new { IsSuccess = false, Message = "Tour guide is already booked for the selected dates!" });
+				}
+
+				// ✅ Calculate total cost
+				decimal totalCost = booking.TotalDays * tourGuide.RatePerDay;
+
+				var pendingBooking = new UserTourGuideBooking
+				{
+					UserId = Guid.Parse(userId),
+					TourGuideId = booking.TourGuideId,
+					TotalAmount = totalCost,
+					Status = BookingStatus.Pending.ToString(),
+					TotalDays = booking.TotalDays,
+					StartDate = booking.StartDate,
+					EndDate = booking.EndDate
+				};
+
+				_context.UserTourGuideBookings.Add(pendingBooking);
+				await _context.SaveChangesAsync();
+
+				var paymentResult = await _paymentService.CreatePaymentIntent(pendingBooking.Id, "TourGuide", pendingBooking.TotalAmount);
+				var clientSecret = paymentResult?.GetType().GetProperty("clientSecret")?.GetValue(paymentResult)?.ToString();
+
+				if (!string.IsNullOrEmpty(clientSecret))
+				{
+					return Ok(new { IsSuccess = true, BookingId = pendingBooking.Id, ClientSecret = clientSecret });
+				}
+				else
+				{
+					return BadRequest(new { IsSuccess = false, Message = "Failed to create payment intent!" });
+				}
 			}
-
-			var tourGuide = await _context.TourGuides.FindAsync(booking.TourGuideId);
-			if (tourGuide == null || !tourGuide.IsAvailable)
+			catch (Exception ex) 
 			{
-				return BadRequest(new { IsSuccess = false, Message = "Tour guide not available!" });
+				return StatusCode(500, new DataSendingResponse
+				{
+					IsSuccess = false,
+					Message = "Internal Server Error",
+					Errors = new List<string> { ex.Message }
+				});
 			}
-
-			// 🛑 Check for conflicting bookings (with "Paid" status)
-			var conflictingBooking = await _context.UserTourGuideBookings
-				.Where(b => b.TourGuideId == booking.TourGuideId && b.Status == BookingStatus.Paid.ToString())
-				.Where(b => booking.StartDate <= b.EndDate && booking.EndDate >= b.StartDate)
-				.FirstOrDefaultAsync();
-
-			if (conflictingBooking != null)
-			{
-				return BadRequest(new { IsSuccess = false, Message = "Tour guide is already booked for the selected dates!" });
 			}
-
-			// ✅ Calculate total cost
-			decimal totalCost = booking.TotalDays * tourGuide.RatePerDay;
-
-			var pendingBooking = new UserTourGuideBooking
-			{
-				UserId = Guid.Parse(userId),
-				TourGuideId = booking.TourGuideId,
-				TotalAmount = totalCost,
-				Status = BookingStatus.Pending.ToString(),
-				TotalDays = booking.TotalDays,
-				StartDate = booking.StartDate,
-				EndDate = booking.EndDate
-			};
-
-			_context.UserTourGuideBookings.Add(pendingBooking);
-			await _context.SaveChangesAsync();
-
-			var paymentResult = await _paymentService.CreatePaymentIntent(pendingBooking.Id, "TourGuide", pendingBooking.TotalAmount);
-			var clientSecret = paymentResult?.GetType().GetProperty("clientSecret")?.GetValue(paymentResult)?.ToString();
-
-			if (!string.IsNullOrEmpty(clientSecret))
-			{
-				return Ok(new { IsSuccess = true, BookingId = pendingBooking.Id, ClientSecret = clientSecret });
-			}
-			else
-			{
-				return BadRequest(new { IsSuccess = false, Message = "Failed to create payment intent!" });
-			}
-		}
 
 
 		//[HttpPost("booking/payment-success")]
@@ -345,80 +368,106 @@ namespace IdealTrip.Controllers
 		[HttpPost("booking/payment-success")]
 		public async Task<IActionResult> PaymentSuccess([FromBody] PaymentSuccessDto paymentData)
 		{
-			if (paymentData == null || string.IsNullOrEmpty(paymentData.BookingId) || string.IsNullOrEmpty(paymentData.PaymentIntentId))
+			if (!ModelState.IsValid)
 			{
-				return BadRequest(new { IsSuccess = false, Message = "Invalid request data." });
+				return BadRequest(new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = "Invalid Data",
+					Errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList()
+				});
 			}
-
-			var bookingId = Guid.Parse(paymentData.BookingId);
-			var booking = await _context.UserTourGuideBookings
-										.Include(b => b.User)
-										.Include(b => b.TourGuide)
-										.FirstOrDefaultAsync(b => b.Id == bookingId);
-
-			if (booking == null)
-			{
-				return NotFound(new { IsSuccess = false, Message = "Booking not found." });
-			}
-
-			using var transaction = await _context.Database.BeginTransactionAsync();
 			try
 			{
-				// ✅ Update booking status and store PaymentIntentId
-				booking.Status = BookingStatus.Paid.ToString();
-				booking.PaymentIntentId = paymentData.PaymentIntentId;
-
-				_context.UserTourGuideBookings.Update(booking);
-				await _context.SaveChangesAsync();
-
-				// ✅ Real-time Notification to Tour Guide (with Booking Date)
-				var tourGuideNotificationMessage = $"📅 You have a new booking for {booking.BookingDate:MMMM dd, yyyy} from {booking.User.FullName}! 💳 Payment ID: {paymentData.PaymentIntentId}";
-				var tourGuideNotification = new Notifications
+				if (paymentData == null || string.IsNullOrEmpty(paymentData.BookingId) || string.IsNullOrEmpty(paymentData.PaymentIntentId))
 				{
-					UserId = booking.TourGuide.Id,
-					Messege = tourGuideNotificationMessage
-				};
-				_context.Notifications.Add(tourGuideNotification);
-				await _hubContext.Clients.User(booking.TourGuide.Id.ToString())
-								  .SendAsync("ReceiveNotification", tourGuideNotificationMessage);
+					return BadRequest(new { IsSuccess = false, Message = "Invalid request data." });
+				}
 
-				// ✅ Real-time Notification to User
-				var userNotificationMessage = $"🎉 Your booking with {booking.TourGuide.FullName} on {booking.BookingDate:MMMM dd, yyyy} is confirmed! 💳 Payment ID: {paymentData.PaymentIntentId}";
-				var userNotification = new Notifications
+				var bookingId = Guid.Parse(paymentData.BookingId);
+				var booking = await _context.UserTourGuideBookings
+											.Include(b => b.User)
+											.Include(b => b.TourGuide)
+											.FirstOrDefaultAsync(b => b.Id == bookingId);
+
+				if (booking == null)
 				{
-					UserId = booking.User.Id,
-					Messege = userNotificationMessage
-				};
-				_context.Notifications.Add(userNotification);
-				await _hubContext.Clients.User(booking.User.Id.ToString())
-								  .SendAsync("ReceiveNotification", userNotificationMessage);
+					return NotFound(new { IsSuccess = false, Message = "Booking not found." });
+				}
 
-				// ✅ Notify All Users (if needed)
-				await _hubContext.Clients.All.SendAsync("ReceiveNotification",
-					$"📢 {booking.User.FullName} just booked a tour with {booking.TourGuide.FullName} for {booking.BookingDate:MMMM dd, yyyy}!");
+				using var transaction = await _context.Database.BeginTransactionAsync();
+				try
+				{
+					// ✅ Update booking status and store PaymentIntentId
+					booking.Status = BookingStatus.Paid.ToString();
+					booking.PaymentIntentId = paymentData.PaymentIntentId;
 
-				await _context.SaveChangesAsync();
+					_context.UserTourGuideBookings.Update(booking);
+					await _context.SaveChangesAsync();
 
-				// ✅ Send Email Confirmation
-				string emailContent = EmailTemplates.PaymentSuccessTemplate(
-					booking.User.FullName,
-					booking.TotalAmount.ToString(),
-					booking.BookingDate.ToString("MMMM dd, yyyy"),
-					booking.TourGuide.FullName,
-					booking.TourGuide.Bio,
-					booking.Status,
-					booking.PaymentIntentId
-				);
+					// ✅ Real-time Notification to Tour Guide (with Booking Date)
+					var tourGuideNotificationMessage = $"📅 You have a new booking for {booking.BookingDate:MMMM dd, yyyy} from {booking.User.FullName}! 💳 Payment ID: {paymentData.PaymentIntentId}";
+					var tourGuideNotification = new Notifications
+					{
+						UserId = booking.TourGuide.Id,
+						Messege = tourGuideNotificationMessage
+					};
+					_context.Notifications.Add(tourGuideNotification);
+					await _hubContext.Clients.User(booking.TourGuide.Id.ToString())
+									  .SendAsync("ReceiveNotification", tourGuideNotificationMessage);
 
-				await _emailService.SendEmailAsync(booking.User.Email, "Booking Successful", emailContent);
+					// ✅ Real-time Notification to User
+					var userNotificationMessage = $"🎉 Your booking with {booking.TourGuide.FullName} on {booking.BookingDate:MMMM dd, yyyy} is confirmed! 💳 Payment ID: {paymentData.PaymentIntentId}";
+					var userNotification = new Notifications
+					{
+						UserId = booking.User.Id,
+						Messege = userNotificationMessage
+					};
+					_context.Notifications.Add(userNotification);
+					await _hubContext.Clients.User(booking.User.Id.ToString())
+									  .SendAsync("ReceiveNotification", userNotificationMessage);
 
-				await transaction.CommitAsync();
-				return Ok(new { IsSuccess = true, Message = "Payment updated, notifications sent successfully." });
+					// ✅ Notify All Users (if needed)
+					await _hubContext.Clients.All.SendAsync("ReceiveNotification",
+						$"📢 {booking.User.FullName} just booked a tour with {booking.TourGuide.FullName} for {booking.BookingDate:MMMM dd, yyyy}!");
+
+					await _context.SaveChangesAsync();
+
+					// ✅ Send Email Confirmation
+					string emailContent = EmailTemplates.TourGuideBookingSuccessTemplate(
+	booking.User.FullName,
+	booking.TourGuide.FullName,
+	booking.TourGuide.Bio,
+	booking.StartDate.ToString("dd MMM yyyy"),
+	booking.EndDate.ToString("dd MMM yyyy"),
+	booking.NumberOfTravelers,
+	booking.TotalAmount,
+	booking.PaymentIntentId,
+	booking.TotalDays,
+	booking.Status,
+	booking.BookingDate
+);
+
+
+					await _emailService.SendEmailAsync(booking.User.Email, "Booking Successful", emailContent);
+
+					await transaction.CommitAsync();
+					return Ok(new { IsSuccess = true, Message = "Payment updated, notifications sent successfully." });
+				}
+				catch (Exception ex)
+				{
+					await transaction.RollbackAsync();
+					return BadRequest(new DataSendingResponse { IsSuccess = false, Message = "Payment processing failed.", Errors = new List<string> { ex.Message } });
+				}
 			}
-			catch (Exception ex)
+			catch (Exception ex) 
 			{
-				await transaction.RollbackAsync();
-				return BadRequest(new { IsSuccess = false, Message = "Payment processing failed."});
+				return StatusCode(500, new DataSendingResponse
+				{
+					IsSuccess = false,
+					Message = "Internal Server Error",
+					Errors = new List<string> { ex.Message }
+				});
 			}
 		}
 
@@ -426,125 +475,169 @@ namespace IdealTrip.Controllers
 		[HttpGet("user-bookings")]
 		public async Task<IActionResult> GetUserBookings([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
 		{
-			var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-			if (string.IsNullOrEmpty(userId))
+			try
 			{
-				return Unauthorized(new { IsSuccess = false, Message = "Invalid Token!" });
+				var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+				if (string.IsNullOrEmpty(userId))
+				{
+					return Unauthorized(new { IsSuccess = false, Message = "Invalid Token!" });
+				}
+
+				var query = _context.UserTourGuideBookings
+					.Where(b => b.UserId == Guid.Parse(userId))
+					.OrderByDescending(b => b.Status)
+					.Skip((page - 1) * pageSize)
+					.Take(pageSize);
+
+				var bookings = await query.Select(b => new
+				{
+					b.Id,
+					b.TourGuideId,
+					b.TotalDays,
+					b.TotalAmount,
+					b.Status,
+					b.PaymentIntentId
+				}).ToListAsync();
+
+				return Ok(new { IsSuccess = true, Bookings = bookings });
 			}
-
-			var query = _context.UserTourGuideBookings
-				.Where(b => b.UserId == Guid.Parse(userId))
-				.OrderByDescending(b => b.Status)
-				.Skip((page - 1) * pageSize)
-				.Take(pageSize);
-
-			var bookings = await query.Select(b => new
+			catch (Exception ex) 
 			{
-				b.Id,
-				b.TourGuideId,
-				b.TotalDays,
-				b.TotalAmount,
-				b.Status,
-				b.PaymentIntentId
-			}).ToListAsync();
-
-			return Ok(new { IsSuccess = true, Bookings = bookings });
+				return StatusCode(500, new DataSendingResponse
+				{
+					IsSuccess = false,
+					Message = "Internal Server Error",
+					Errors = new List<string> { ex.Message }
+				});
+			}
 		}
 		// POST: Add Feedback for
 		[HttpPost("add-feedback")]
 		public async Task<IActionResult> AddFeedback([FromBody] FeedbackRequest request)
 		{
-			var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-			if (string.IsNullOrEmpty(userId))
+			if (!ModelState.IsValid)
 			{
-				return Unauthorized(new DataSendingResponse { IsSuccess = false, Message = "Unauthorized action." });
-			}
-
-			// Check if tour guide exists
-			var tourGuide = await _context.TourGuides.FirstOrDefaultAsync(tg => tg.Id == request.ServiceId);
-			if (tourGuide == null)
-			{
-				return NotFound(new DataSendingResponse
+				return BadRequest(new UserManagerResponse
 				{
 					IsSuccess = false,
-					Message = "Tour guide not found."
+					Messege = "Invalid Data",
+					Errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList()
 				});
 			}
-
-			// ✅ Ensure user has a PAID booking with the tour guide AND the tour is completed
-			var hasCompletedTour = await _context.UserTourGuideBookings.AnyAsync(b =>
-				b.UserId == Guid.Parse(userId) &&
-				b.TourGuideId == request.ServiceId &&
-				b.Status == BookingStatus.Paid.ToString() &&
-				b.EndDate <= DateTime.UtcNow);
-
-			if (!hasCompletedTour)
+			try
 			{
-				return BadRequest(new DataSendingResponse
+				var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+				if (string.IsNullOrEmpty(userId))
+				{
+					return Unauthorized(new DataSendingResponse { IsSuccess = false, Message = "Unauthorized action." });
+				}
+
+				// Check if tour guide exists
+				var tourGuide = await _context.TourGuides.FirstOrDefaultAsync(tg => tg.Id == request.ServiceId);
+				if (tourGuide == null)
+				{
+					return NotFound(new DataSendingResponse
+					{
+						IsSuccess = false,
+						Message = "Tour guide not found."
+					});
+				}
+
+				// ✅ Ensure user has a PAID booking with the tour guide AND the tour is completed
+				var hasCompletedTour = await _context.UserTourGuideBookings.AnyAsync(b =>
+					b.UserId == Guid.Parse(userId) &&
+					b.TourGuideId == request.ServiceId &&
+					b.Status == BookingStatus.Paid.ToString() &&
+					b.EndDate <= DateTime.UtcNow);
+
+				if (!hasCompletedTour)
+				{
+					return BadRequest(new DataSendingResponse
+					{
+						IsSuccess = false,
+						Message = "You can only give feedback after completing the tour."
+					});
+				}
+
+				// ✅ Add feedback (multiple feedbacks allowed)
+				var feedback = new Feedback
+				{
+					Id = Guid.NewGuid(),
+					UserId = Guid.Parse(userId),
+					ServiceType = Service.TourGuide.ToString(),
+					ServiceId = request.ServiceId,
+					FeedbackText = request.FeedbackText,
+					Rating = request.Rating,
+					Date = DateTime.UtcNow
+				};
+
+				_context.FeedBacks.Add(feedback);
+				await _context.SaveChangesAsync();
+
+				// ✅ Update average rating
+				var averageRating = await _context.FeedBacks
+					.Where(f => f.ServiceId == request.ServiceId && f.ServiceType == Service.TourGuide.ToString())
+					.AverageAsync(f => (decimal?)f.Rating) ?? 0;
+
+				tourGuide.Rating = (float)averageRating;
+				_context.TourGuides.Update(tourGuide);
+				await _context.SaveChangesAsync();
+
+				return Ok(new DataSendingResponse
+				{
+					IsSuccess = true,
+					Data = feedback,
+					Message = "Feedback submitted and rating updated successfully!"
+				});
+			}
+			catch (Exception ex) 
+			{
+				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Message = "You can only give feedback after completing the tour."
+					Message = "Internal Server Error",
+					Errors = new List<string> { ex.Message }
 				});
 			}
-
-			// ✅ Add feedback (multiple feedbacks allowed)
-			var feedback = new Feedback
-			{
-				Id = Guid.NewGuid(),
-				UserId = Guid.Parse(userId),
-				ServiceType = Service.TourGuide.ToString(),
-				ServiceId = request.ServiceId,
-				FeedbackText = request.FeedbackText,
-				Rating = request.Rating,
-				Date = DateTime.UtcNow
-			};
-
-			_context.FeedBacks.Add(feedback);
-			await _context.SaveChangesAsync();
-
-			// ✅ Update average rating
-			var averageRating = await _context.FeedBacks
-				.Where(f => f.ServiceId == request.ServiceId && f.ServiceType == Service.TourGuide.ToString())
-				.AverageAsync(f => (decimal?)f.Rating) ?? 0;
-
-			tourGuide.Rating = (float)averageRating;
-			_context.TourGuides.Update(tourGuide);
-			await _context.SaveChangesAsync();
-
-			return Ok(new DataSendingResponse
-			{
-				IsSuccess = true,
-				Data = feedback,
-				Message = "Feedback submitted and rating updated successfully!"
-			});
 		}
 
 		// GET: Get Feedback for Tour Guide
 		[HttpGet("get-feedback/{tourGuideId}")]
 		public async Task<IActionResult> GetFeedback(Guid tourGuideId)
 		{
-			var feedbacks = await _context.FeedBacks
-			.Where(f => f.ServiceId == tourGuideId && f.ServiceType == Service.TourGuide.ToString())
-			.OrderByDescending(f => f.Date)
-			.Select(f => new {
-				f.FeedbackText,
-				f.Rating,
-				f.Date,
-				User = new
+			try {
+				var feedbacks = await _context.FeedBacks
+				.Where(f => f.ServiceId == tourGuideId && f.ServiceType == Service.TourGuide.ToString())
+				.OrderByDescending(f => f.Date)
+				.Select(f => new {
+					f.FeedbackText,
+					f.Rating,
+					f.Date,
+					User = new
+					{
+						f.User.Id,
+						f.User.FullName
+					}
+				})
+				.ToListAsync();
+
+
+				return Ok(new DataSendingResponse
 				{
-					f.User.Id,
-					f.User.FullName
-				}
-			})
-			.ToListAsync();
-
-
-			return Ok(new DataSendingResponse
+					IsSuccess = true,
+					Data = feedbacks,
+					Message = "Feedback retrieved successfully."
+				});
+			}
+			catch (Exception ex)
 			{
-				IsSuccess = true,
-				Data = feedbacks,
-				Message = "Feedback retrieved successfully."
-			});
+				return StatusCode(500, new DataSendingResponse
+				{
+					IsSuccess = false,
+					Message = "Internal Server Error",
+					Errors = new List<string> { ex.Message }
+				});
+			}
 		}
 	}
 

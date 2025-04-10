@@ -99,6 +99,15 @@ namespace IdealTrip.Controllers
 		[HttpPost("booking/initiate")]
 		public async Task<IActionResult> InitiateBooking([FromBody] PackageBookingModel booking)
 		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = "Invalid Data",
+					Errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList()
+				});
+			}
 			var userId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
 			var user = await _userManager.FindByIdAsync(userId);
 			if (string.IsNullOrEmpty(userId))
@@ -185,6 +194,15 @@ namespace IdealTrip.Controllers
 		[HttpPost("booking/payment-success")]
 		public async Task<IActionResult> PaymentSuccess([FromBody] PaymentSuccessDto paymentData)
 		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = "Invalid Data",
+					Errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList()
+				});
+			}
 			if (paymentData == null || string.IsNullOrEmpty(paymentData.BookingId) || string.IsNullOrEmpty(paymentData.PaymentIntentId))
 			{
 				return BadRequest(new DataSendingResponse { IsSuccess = false, Message = "Invalid request data." });

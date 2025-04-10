@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Microsoft.AspNetCore.Routing.Constraints;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace IdealTrip.Models.Tranport_Booking
 {
@@ -16,6 +17,7 @@ namespace IdealTrip.Models.Tranport_Booking
 		public decimal TicketPrice { get; set; } // Price per seat
 		public bool IsAvailable { get; set; }
 		public DateTime CreatedAt { get; set; }
+		public float Rating {  get; set; }
 
 		[ForeignKey("OwnerId")]
 

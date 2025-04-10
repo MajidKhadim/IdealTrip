@@ -6,7 +6,8 @@
 		TourGuide,
 		Transport,
 		LocalHome,
-		Hotel
+		Hotel,
+		HotelRoom
 	}
 
 }

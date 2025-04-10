@@ -17,12 +17,16 @@ namespace IdealTrip.Models.Hotels
         public DateOnly CheckInDate { get; set; }
         [Required]
         public DateOnly CheckOutDate { get; set; }
+        [Required]
+        public decimal TotalAmount {  get; set; }
+        [Required]
 
         public int TotalDays { get; set; }
         [Required]
         public string PaymentIntentId { get; set; }
+        [Required]
         public string Status { get; set; } // "Pending", "Paid", "Cancelled"
-        public DateTime BookingTime { get; set; }
+        public DateTime BookingTime { get; set; } = DateTime.Now;
 
     }
 }
