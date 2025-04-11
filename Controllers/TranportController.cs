@@ -11,6 +11,7 @@ using IdealTrip.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 using IdealTrip.Models.Database_Tables;
 using Microsoft.AspNetCore.SignalR;
+using IdealTrip.Models.Tranport;
 
 namespace IdealTrip.Controllers
 {
@@ -157,6 +158,7 @@ namespace IdealTrip.Controllers
 		}
 
 		[HttpGet("get-all-transports")]
+		[AllowAnonymous]
 		public async Task<IActionResult> GetAllTransports()
 		{
 			try
@@ -199,7 +201,8 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize]
 		[HttpGet("get-transport/{id}")]
 		public async Task<IActionResult> GetTransportById(Guid id)
 		{
@@ -300,7 +303,7 @@ namespace IdealTrip.Controllers
 			}
 		}
 		[HttpPost("booking/initiate")]
-		public async Task<IActionResult> InitiateBooking([FromBody] UserTransportBooking booking)
+		public async Task<IActionResult> InitiateBooking([FromBody] TransportBookingModel model)
 		{
 			if (!ModelState.IsValid)
 			{
@@ -319,17 +322,19 @@ namespace IdealTrip.Controllers
 			try
 			{
 
-				var transport = await _context.Transports.FindAsync(booking.TransportId);
+				var transport = await _context.Transports.FindAsync(model.TransportId);
 
 				if (!transport.IsAvailable)
 					return BadRequest(new { IsSuccess = false, Message = "Invalid booking details or bus not available." });
 
-				if (transport.SeatsAvailable < booking.SeatsBooked)
+				if (transport.SeatsAvailable < model.SeatsBooked)
 					return BadRequest(new { IsSuccess = false, Message = "Not enough seats available." });
+				UserTransportBooking booking = new();
 
 				// Calculate Total Fare
+				booking.TransportId = Guid.Parse(model.TransportId);
 				booking.TicketPrice = transport.TicketPrice;
-				booking.TotalFare = transport.TicketPrice * booking.SeatsBooked;
+				booking.TotalFare = transport.TicketPrice * model.SeatsBooked;
 				booking.Status = "Pending";
 				booking.BookingDate = DateTime.Now;
 				booking.CreatedAt = DateTime.Now;

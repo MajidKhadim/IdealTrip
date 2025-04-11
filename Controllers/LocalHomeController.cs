@@ -359,7 +359,7 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-
+		[AllowAnonymous]
 		[HttpGet("GetLocalHomes")]
 		public async Task<IActionResult> GetLocalHomes(
 	[FromQuery] string? location = null,
@@ -454,6 +454,8 @@ namespace IdealTrip.Controllers
 			}
 		}
 
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize]
 		[HttpGet("GetLocalHomeById/{id}")]
 		public async Task<IActionResult> GetLocalHomeById(Guid id)
 		{
@@ -760,6 +762,7 @@ namespace IdealTrip.Controllers
 
 
 		[HttpGet("user-bookings")]
+		[Authorize]
 		public async Task<IActionResult> GetUserBookings([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
 		{
 			try

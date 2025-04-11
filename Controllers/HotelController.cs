@@ -658,6 +658,7 @@ namespace IdealTrip.Controllers
 
 
 		[HttpGet]
+		[AllowAnonymous]
 		public async Task<IActionResult> GetHotelsWithFilters(
 	string? name,
 	string? address,
@@ -740,7 +741,9 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-		[HttpGet("tourist/hotels/{id}")]
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize]
+		[HttpGet("{id}")]
 		public async Task<IActionResult> GetHotelById(Guid id)
 		{
 			try
@@ -790,6 +793,7 @@ namespace IdealTrip.Controllers
 			}
 		}
 		[HttpGet("/rooms")]
+		[AllowAnonymous]
 		public async Task<IActionResult> GetRoomsWithFilters(
 	Guid? hotelId,
 	RoomType? roomType,

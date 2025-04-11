@@ -37,44 +37,8 @@ namespace IdealTrip.Controllers
 			_emailService = emailService;
 			_hubContext = hubContext;
 		}
+		[AllowAnonymous]
 		[HttpGet]
-		//public async Task<IActionResult> GetAllTourGuides()
-		//{
-		//	try
-		//	{
-		//		var tourGuides = await _context.TourGuides
-		//		.Where(tg => tg.IsAvailable && tg.User.Status == Models.Enums.ProofStatus.Verified)
-		//		.Select(tg => new
-		//		{
-		//			tg.Id,
-		//			tg.FullName,
-		//			tg.PhoneNumber,
-		//			tg.RatePerDay,
-		//			tg.Experience,
-		//			tg.Bio,
-		//			tg.Location,
-		//			tg.Rating
-		//		})
-		//		.ToListAsync();
-		//		return Ok(new UserManagerResponse
-		//		{
-		//			IsSuccess = true,
-		//			Data = tourGuides,
-		//			Messege = "TourGuides retrived Successfully!"
-		//		});
-
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		_logger.LogError($"Error while fetching tour guides data : {ex.Message}");
-		//		return StatusCode(500, new UserManagerResponse
-		//		{
-		//			IsSuccess = false,
-		//			Messege = "Something went wrong!"
-		//		});
-		//	}
-		//}
-		[HttpGet("tour-guides")]
 		public async Task<IActionResult> GetAllTourGuides(
 	[FromQuery] string? location,
 	[FromQuery] double? minimumRating,
@@ -150,7 +114,8 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize]
 		[HttpGet("{id}")]
 		public async Task<IActionResult> GetTourGuideDetails(Guid id)
 		{
@@ -242,6 +207,8 @@ namespace IdealTrip.Controllers
 		//		return BadRequest(new { IsSuccess = false, Message = "Failed to create payment intent!" });
 		//	}
 		//}
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "Tourist")]
 		[HttpPost("booking/initiate")]
 		public async Task<IActionResult> InitiateBooking([FromBody] TourGuideBookingModel booking)
 		{
@@ -364,7 +331,8 @@ namespace IdealTrip.Controllers
 		//		return BadRequest(new { IsSuccess = false, Message = "Payment processing failed." });
 		//	}
 		//}
-
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "Tourist")]
 		[HttpPost("booking/payment-success")]
 		public async Task<IActionResult> PaymentSuccess([FromBody] PaymentSuccessDto paymentData)
 		{
@@ -471,7 +439,8 @@ namespace IdealTrip.Controllers
 			}
 		}
 
-
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize]
 		[HttpGet("user-bookings")]
 		public async Task<IActionResult> GetUserBookings([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
 		{
@@ -512,6 +481,8 @@ namespace IdealTrip.Controllers
 			}
 		}
 		// POST: Add Feedback for
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "Tourist")]
 		[HttpPost("add-feedback")]
 		public async Task<IActionResult> AddFeedback([FromBody] FeedbackRequest request)
 		{
@@ -602,6 +573,8 @@ namespace IdealTrip.Controllers
 		}
 
 		// GET: Get Feedback for Tour Guide
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "Tourist")]
 		[HttpGet("get-feedback/{tourGuideId}")]
 		public async Task<IActionResult> GetFeedback(Guid tourGuideId)
 		{
