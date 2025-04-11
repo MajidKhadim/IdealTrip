@@ -695,6 +695,89 @@
 		<p>Thank you for choosing <strong>IdealTrip</strong> for your journey. Have a safe and pleasant ride!</p>
 	";
 		}
+		public static string TourGuideBookingNotificationTemplate(
+			string tourGuideName,
+			string touristName,
+			string touristEmail,
+			string touristPhone,
+			DateTime startDate,
+			DateTime endDate,
+			int numberOfTravelers,
+			decimal totalAmount,
+			string paymentIntentId,
+			int totalDays,
+			DateTime bookingDate,
+            string SpecialRequest
+		)
+		{
+			return $@"
+		<!DOCTYPE html>
+		<html>
+		<head>
+			<meta charset='UTF-8'>
+			<title>New Booking Notification</title>
+			<style>
+				body {{
+					font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+					background-color: #f9f9f9;
+					color: #333;
+					line-height: 1.6;
+				}}
+				.container {{
+					width: 90%;
+					max-width: 600px;
+					margin: 0 auto;
+					padding: 20px;
+					background-color: #ffffff;
+					border-radius: 8px;
+					box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+				}}
+				.header {{
+					text-align: center;
+					color: #2a9d8f;
+					margin-bottom: 20px;
+				}}
+				.details {{
+					margin-top: 20px;
+				}}
+				.footer {{
+					margin-top: 30px;
+					font-size: 14px;
+					color: #777;
+					text-align: center;
+				}}
+			</style>
+		</head>
+		<body>
+			<div class='container'>
+				<h2 class='header'>📢 New Tour Booking Received!</h2>
+				<p>Dear <strong>{tourGuideName}</strong>,</p>
+
+				<p>We are excited to inform you that a tourist has just confirmed a booking with you.</p>
+
+				<div class='details'>
+					<p><strong>Tourist Name:</strong> {touristName}</p>
+					<p><strong>Email:</strong> {touristEmail}</p>
+					<p><strong>Phone:</strong> {touristPhone}</p>
+					<p><strong>Start Date:</strong> {startDate:dd MMM yyyy}</p>
+					<p><strong>End Date:</strong> {endDate:dd MMM yyyy}</p>
+					<p><strong>Total Days:</strong> {totalDays}</p>
+					<p><strong>Number of Travelers:</strong> {numberOfTravelers}</p>
+                    <p><strong>Special Request:</strong> {SpecialRequest}</p>
+					<p><strong>Total Amount:</strong> ₹{totalAmount}</p>
+					<p><strong>Payment ID:</strong> {paymentIntentId}</p>
+					<p><strong>Booking Date:</strong> {bookingDate:dd MMM yyyy, hh:mm tt}</p>
+				</div>
+
+				<p>Please prepare accordingly to provide the best experience for your guest!</p>
+
+				<div class='footer'>
+					<p>— The Ideal Trip Team</p>
+				</div>
+			</div>
+		</body>
+		</html>";
+		}
 
 
 

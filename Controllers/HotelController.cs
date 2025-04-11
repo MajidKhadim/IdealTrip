@@ -37,7 +37,7 @@ namespace IdealTrip.Controllers
 
 		// 1. Add Hotel
 		[HttpPost]
-		public async Task<IActionResult> AddHotel([FromBody] AddHotelModel model)
+		public async Task<IActionResult> AddHotel([FromForm] AddHotelModel model)
 		{
 			try
 			{
@@ -148,8 +148,8 @@ namespace IdealTrip.Controllers
 		}
 
 		// 2. Update Hotel
-		[HttpPut("{hotelId}")]
-		public async Task<IActionResult> UpdateHotel(Guid hotelId, [FromBody] AddHotelModel model)
+		[HttpPost("{hotelId}")]
+		public async Task<IActionResult> UpdateHotel(Guid hotelId, [FromForm] AddHotelModel model)
 		{
 			try
 			{
@@ -342,7 +342,7 @@ namespace IdealTrip.Controllers
 
 		// 5. Add Hotel Room
 		[HttpPost("add-room")]
-		public async Task<IActionResult> AddRoom(Guid hotelId, [FromBody] AddHotelRoomModel model)
+		public async Task<IActionResult> AddRoom(Guid hotelId, [FromForm] AddHotelRoomModel model)
 		{
 			try
 			{

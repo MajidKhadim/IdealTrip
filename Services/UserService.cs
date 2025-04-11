@@ -38,6 +38,9 @@ namespace IdealTrip.Services
 		Task<UserManagerResponse> SendAccountApprovedEmail(string email);
 		Task<UserManagerResponse> SendAccountRejectedEmail(string email);
 		Task<ApplicationUser?> GetEmailStatus(string email);
+
+		Task<UserManagerResponse> GetUsersAllBookings(string userId);
+		public Task<UserManagerResponse> GetUserBookingDetails(string bookingType, string bookingId);
 	}
 
 	public class UserService : IUserService
@@ -1168,7 +1171,7 @@ namespace IdealTrip.Services
 				return new UserManagerResponse
 				{
 					IsSuccess = false,
-					Messege = "Something went wr"
+					Messege = "Something went wrong"
 				};
 			}
 			catch (Exception ex)
@@ -1199,6 +1202,193 @@ namespace IdealTrip.Services
 				? new UserManagerResponse { IsSuccess = true, Messege = "User deleted successfully." }
 				: new UserManagerResponse { IsSuccess = false, Messege = "Error deleting user." };
 		}
+
+		public async Task<UserManagerResponse> GetUsersAllBookings(string userId)
+		{
+				var result = new List<UserBookingSummaryDto>();
+
+				// 🏨 Hotel Room Bookings
+				var hotelBookings = await _context.UserHotelRoomBookings
+					.Include(b => b.HotelRoom).ThenInclude(r => r.Hotel)
+					.Where(b => b.UserId.ToString() == userId)
+					.ToListAsync();
+
+				result.AddRange(hotelBookings.Select(b => new UserBookingSummaryDto
+				{
+					BookingType = "Hotel",
+					ServiceName = b.HotelRoom.Hotel.HotelName,
+					Location = null,
+					BookingDate = b.BookingTime,
+					AmountPaid = b.TotalAmount,
+					NumberOfPeople = null,
+					Status = b.Status
+				}));
+
+				// 🏡 Local Home Bookings
+				var localHomeBookings = await _context.UserLocalHomesBookings
+					.Include(b => b.LocalHome)
+					.Where(b => b.UserId.ToString() == userId)
+					.ToListAsync();
+
+				result.AddRange(localHomeBookings.Select(b => new UserBookingSummaryDto
+				{
+					BookingType = "LocalHome",
+					ServiceName = b.LocalHome.Name,
+					Location = null,
+					BookingDate = b.BookingDate,
+					NumberOfPeople = null,
+					AmountPaid = b.TotalAmount,
+					Status = b.Status
+				}));
+
+				// 🚍 Transport Bookings
+				var transportBookings = await _context.UserTransportBookings
+					.Include(b => b.Transport)
+					.Where(b => b.UserId.ToString() == userId)
+					.ToListAsync();
+
+				result.AddRange(transportBookings.Select(b => new UserBookingSummaryDto
+				{
+					BookingType = "Transport",
+					ServiceName = b.Transport.Name,
+					Location = $"{b.Transport.StartLocation} → {b.Transport.Destination}",
+					BookingDate = b.BookingDate,
+					NumberOfPeople = b.SeatsBooked,
+					AmountPaid = b.TotalFare,
+					Status = b.Status
+				}));
+
+				// 🧭 Tour Guide Bookings
+				var tourGuideBookings = await _context.UserTourGuideBookings
+					.Include(b => b.TourGuide)
+					.Where(b => b.UserId.ToString() == userId)
+					.ToListAsync();
+
+				result.AddRange(tourGuideBookings.Select(b => new UserBookingSummaryDto
+				{
+					BookingType = "TourGuide",
+					ServiceName = b.TourGuide.FullName,
+					Location = null,
+					BookingDate = b.BookingDate,
+					AmountPaid = b.TotalAmount,
+					NumberOfPeople = null,
+					Status = b.Status
+				}));
+
+				// Sort by BookingDate (most recent first)
+				return new UserManagerResponse
+				{
+					IsSuccess = true,
+					Messege = "Bookings Retrieved Successfully",
+					Data = result.OrderByDescending(b => b.BookingDate).ToList()
+				};
+
+		}
+		public async Task<UserManagerResponse> GetUserBookingDetails(string bookingType, string bookingId)
+		{
+			switch (bookingType)
+			{
+				case "Hotel":
+					var hotelBooking = await _context.UserHotelRoomBookings
+						.Include(b => b.HotelRoom).ThenInclude(r => r.Hotel)
+						.FirstOrDefaultAsync(b => b.BookingId.ToString() == bookingId);
+
+					if (hotelBooking == null) return new UserManagerResponse { IsSuccess = false,Messege = "Booking Not Found",Errors = new List<string> { "Booking Not Found" } };
+
+					return new UserManagerResponse
+					{
+						IsSuccess = true,
+						Messege ="Data Retrieved Successfull",
+						Data = (new
+						{
+							BookingType = "Hotel",
+							HotelName = hotelBooking.HotelRoom.Hotel.HotelName,
+							RoomType = hotelBooking.HotelRoom.RoomType.ToString(),
+							Address = hotelBooking.HotelRoom.Hotel.Address,
+							CheckIn = hotelBooking.CheckInDate,
+							CheckOut = hotelBooking.CheckOutDate,
+							TotalAmount = hotelBooking.TotalAmount,
+							Status = hotelBooking.Status
+						})
+					};
+
+				case "LocalHome":
+					var homeBooking = await _context.UserLocalHomesBookings
+						.Include(b => b.LocalHome)
+						.FirstOrDefaultAsync(b => b.Id.ToString() == bookingId);
+
+					if (homeBooking == null) return new UserManagerResponse { IsSuccess = false, Messege = "Booking Not Found", Errors = new List<string> { "Booking Not Found" } };
+
+					return new UserManagerResponse
+					{
+						IsSuccess = true,
+						Messege = "Data Retrieved Successfull",
+						Data = (new
+						{
+							BookingType = "LocalHome",
+							Name = homeBooking.LocalHome.Name,
+							Address = homeBooking.LocalHome.AddressLine,
+							BookingDate = homeBooking.BookingDate,
+							TotalAmount = homeBooking.TotalAmount,
+							Status = homeBooking.Status
+						})
+					};
+
+				case "Transport":
+					var transportBooking = await _context.UserTransportBookings
+						.Include(b => b.Transport)
+						.FirstOrDefaultAsync(b => b.Id.ToString() == bookingId);
+
+					if (transportBooking == null) return new UserManagerResponse { IsSuccess = false, Messege = "Booking Not Found", Errors = new List<string> { "Booking Not Found" } };
+
+
+					return new UserManagerResponse
+					{
+						IsSuccess = true,
+						Messege = "Data Retrieved Successfull",
+						Data = (new
+						{
+							BookingType = "Transport",
+							TransportName = transportBooking.Transport.Name,
+							Route = $"{transportBooking.Transport.StartLocation} → {transportBooking.Transport.Destination}",
+							SeatsBooked = transportBooking.SeatsBooked,
+							Date = transportBooking.BookingDate,
+							TotalFare = transportBooking.TotalFare,
+							Status = transportBooking.Status
+						})
+					};
+				case "TourGuide":
+					var guideBooking = await _context.UserTourGuideBookings
+						.Include(b => b.TourGuide)
+						.FirstOrDefaultAsync(b => b.Id.ToString() == bookingId);
+
+					if (guideBooking == null) return new UserManagerResponse { IsSuccess = false, Messege = "Booking Not Found", Errors = new List<string> { "Booking Not Found" } };
+
+						return new UserManagerResponse
+						{
+							IsSuccess = true,
+							Messege = "Data Retrieved Successfull",
+							Data = (new
+							{
+								BookingType = "TourGuide",
+								GuideName = guideBooking.TourGuide.FullName,
+								Location = guideBooking.TourGuide.Location,
+								BookingDate = guideBooking.BookingDate,
+								TotalAmount = guideBooking.TotalAmount,
+								Status = guideBooking.Status
+							})
+						};
+
+				default:
+					return new UserManagerResponse
+					{
+						IsSuccess = false,
+						Messege = "Invalid booking type."
+					};
+			}
+		}
+
+
 
 		public async Task<UserManagerResponse> GetUserInfo(string userId)
 		{

@@ -14,12 +14,12 @@ namespace IdealTrip.Controllers
 	{
 		private readonly IUserService _userService;
 		private readonly IHttpContextAccessor _contextAccessor;
-        public UserController(IUserService userService,IHttpContextAccessor httpContextAccessor)
-        {
-            _userService = userService;
+		public UserController(IUserService userService, IHttpContextAccessor httpContextAccessor)
+		{
+			_userService = userService;
 			_contextAccessor = httpContextAccessor;
-        }
-        [HttpGet]
+		}
+		[HttpGet]
 		public async Task<IActionResult> GetUserProfile()
 		{
 			try
@@ -35,7 +35,7 @@ namespace IdealTrip.Controllers
 					return Ok(userInfo);
 				}
 				return BadRequest(userInfo);
-				
+
 			}
 			catch (Exception ex)
 			{
@@ -59,14 +59,14 @@ namespace IdealTrip.Controllers
 				{
 					return Unauthorized("Invalid token.");
 				}
-				var result = await _userService.UpdateUser(model,userId);
+				var result = await _userService.UpdateUser(model, userId);
 				if (result.IsSuccess)
 				{
 					return Ok(result);
 				}
 				return BadRequest(result);
 			}
-			catch (Exception ex) 
+			catch (Exception ex)
 			{
 				return BadRequest(new UserManagerResponse
 				{
@@ -88,6 +88,67 @@ namespace IdealTrip.Controllers
 					return Ok(result);
 				}
 				return BadRequest(result);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(505, new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = "Internal Server Error",
+					Errors = new List<string> { "Internal Server Error" }
+				});
+			}
+		}
+
+		[HttpGet("user-bookings")]
+		public async Task<IActionResult> GetUserBookings()
+		{
+			try {
+				var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+				if (string.IsNullOrEmpty(userId))
+				{
+					return Unauthorized(new UserManagerResponse { Errors = new List<string> { "Unauthorized" }, IsSuccess = false, Messege = "Unauthorized" });
+				}
+				var result = await _userService.GetUsersAllBookings(userId);
+				if (result.IsSuccess)
+				{
+					return Ok(result);
+				}
+				else
+				{
+					return BadRequest(new UserManagerResponse { Errors = new List<string> { "Something went wrong" }, IsSuccess = false, Messege = "Something went wrong" });
+				}
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(505, new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = "Internal Server Error",
+					Errors = new List<string> { "Internal Server Error" }
+				});
+			}
+		}
+
+		[HttpGet("bookings/{bookingId}")]
+		public async Task<IActionResult> UserBookingDetails(string bookingId, string bookingType)
+		{
+			try
+			{
+				var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+				if (string.IsNullOrEmpty(userId))
+				{
+					return Unauthorized(new UserManagerResponse { Errors = new List<string> { "Unauthorized" }, IsSuccess = false, Messege = "Unauthorized" });
+				}
+				var result = await _userService.GetUserBookingDetails(bookingId,bookingType);
+				if (result.IsSuccess)
+				{
+					return Ok(result);
+				}
+				else
+				{
+					return BadRequest(result);
+				}
 			}
 			catch (Exception ex)
 			{

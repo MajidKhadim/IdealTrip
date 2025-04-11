@@ -102,6 +102,7 @@ namespace IdealTrip.Controllers
 				var tourguide = await _context.TourGuides.FirstOrDefaultAsync(tg => tg.User.Id.ToString() == guid);
 				tourguide.IsAvailable = true;
 				_context.Update(tourguide);
+				await _context.SaveChangesAsync();
 			}
 			if (result.Succeeded)
 			{

@@ -12,6 +12,7 @@ using System.Security.Claims;
 using IdealTrip.Models.Enums;
 using IdealTrip.Models.Database_Tables;
 using Microsoft.AspNetCore.SignalR;
+using System;
 
 namespace IdealTrip.Controllers
 {
@@ -241,15 +242,27 @@ namespace IdealTrip.Controllers
 				}
 
 				// 🛑 Check for conflicting bookings (with "Paid" status)
-				var conflictingBooking = await _context.UserTourGuideBookings
+				// 🛑 Get all conflicting bookings (with "Paid" status)
+				var conflictingBookings = await _context.UserTourGuideBookings
 					.Where(b => b.TourGuideId == booking.TourGuideId && b.Status == BookingStatus.Paid.ToString())
 					.Where(b => booking.StartDate <= b.EndDate && booking.EndDate >= b.StartDate)
-					.FirstOrDefaultAsync();
+					.Select(b => new
+					{
+						b.StartDate,
+						b.EndDate
+					})
+					.ToListAsync();
 
-				if (conflictingBooking != null)
+				if (conflictingBookings.Any())
 				{
-					return BadRequest(new { IsSuccess = false, Message = "Tour guide is already booked for the selected dates!" });
+					return BadRequest(new
+					{
+						IsSuccess = false,
+						Message = "Tour guide is already booked for the selected dates!",
+						ConflictingDates = conflictingBookings
+					});
 				}
+
 
 				// ✅ Calculate total cost
 				decimal totalCost = booking.TotalDays * tourGuide.RatePerDay;
@@ -262,7 +275,8 @@ namespace IdealTrip.Controllers
 					Status = BookingStatus.Pending.ToString(),
 					TotalDays = booking.TotalDays,
 					StartDate = booking.StartDate,
-					EndDate = booking.EndDate
+					EndDate = booking.EndDate,
+					BookingDate = DateTime.Now
 				};
 
 				_context.UserTourGuideBookings.Add(pendingBooking);
@@ -374,15 +388,15 @@ namespace IdealTrip.Controllers
 					await _context.SaveChangesAsync();
 
 					// ✅ Real-time Notification to Tour Guide (with Booking Date)
-					var tourGuideNotificationMessage = $"📅 You have a new booking for {booking.BookingDate:MMMM dd, yyyy} from {booking.User.FullName}! 💳 Payment ID: {paymentData.PaymentIntentId}";
-					var tourGuideNotification = new Notifications
-					{
-						UserId = booking.TourGuide.Id,
-						Messege = tourGuideNotificationMessage
-					};
-					_context.Notifications.Add(tourGuideNotification);
-					await _hubContext.Clients.User(booking.TourGuide.Id.ToString())
-									  .SendAsync("ReceiveNotification", tourGuideNotificationMessage);
+					//var tourGuideNotificationMessage = $"📅 You have a new booking for {booking.BookingDate:MMMM dd, yyyy} from {booking.User.FullName}! 💳 Payment ID: {paymentData.PaymentIntentId}";
+					//var tourGuideNotification = new Notifications
+					//{
+					//	UserId = booking.TourGuide.User.Id,
+					//	Messege = tourGuideNotificationMessage
+					//};
+					//_context.Notifications.Add(tourGuideNotification);
+					//await _hubContext.Clients.User(booking.TourGuide.Id.ToString())
+					//				  .SendAsync("ReceiveNotification", tourGuideNotificationMessage);
 
 					// ✅ Real-time Notification to User
 					var userNotificationMessage = $"🎉 Your booking with {booking.TourGuide.FullName} on {booking.BookingDate:MMMM dd, yyyy} is confirmed! 💳 Payment ID: {paymentData.PaymentIntentId}";
@@ -400,6 +414,12 @@ namespace IdealTrip.Controllers
 						$"📢 {booking.User.FullName} just booked a tour with {booking.TourGuide.FullName} for {booking.BookingDate:MMMM dd, yyyy}!");
 
 					await _context.SaveChangesAsync();
+					var tourguide = await _context.TourGuides
+	.Include(tg => tg.User)
+	.FirstOrDefaultAsync(tg => tg.Id == booking.TourGuideId);
+
+
+
 
 					// ✅ Send Email Confirmation
 					string emailContent = EmailTemplates.TourGuideBookingSuccessTemplate(
@@ -418,6 +438,23 @@ namespace IdealTrip.Controllers
 
 
 					await _emailService.SendEmailAsync(booking.User.Email, "Booking Successful", emailContent);
+					string guideEmailContent = EmailTemplates.TourGuideBookingNotificationTemplate(
+	booking.TourGuide.FullName,
+	booking.User.FullName,
+	booking.User.Email,
+	booking.User.PhoneNumber,
+	booking.StartDate,
+	booking.EndDate,
+	booking.NumberOfTravelers,
+	booking.TotalAmount,
+	booking.PaymentIntentId,
+	booking.TotalDays,
+	booking.BookingDate,
+	booking.SpecialRequest
+);
+
+					await _emailService.SendEmailAsync(tourguide.User.Email, "You've Got a New Booking!", guideEmailContent);
+
 
 					await transaction.CommitAsync();
 					return Ok(new { IsSuccess = true, Message = "Payment updated, notifications sent successfully." });
