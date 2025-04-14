@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
@@ -18,11 +19,13 @@ namespace IdealTrip.Controllers
 	{
 		private readonly IUserService _userService;
 		private readonly IHttpContextAccessor _contextAccessor;
+		private ApplicationDbContext _context;
 
-		public AuthController(IUserService userService,IHttpContextAccessor contextAccessor)
+		public AuthController(IUserService userService,IHttpContextAccessor contextAccessor,ApplicationDbContext context)
 		{
 			_userService = userService;
 			_contextAccessor = contextAccessor;
+			_context = context;
 		}
 
 		#region Registration
@@ -39,6 +42,22 @@ namespace IdealTrip.Controllers
 					{
 						// Send OTP to user's email
 						var emailSent = await _userService.SendEmailVerificationAsync(model.Email);
+						await Task.Delay(5000); // Wait 5 seconds (you can tweak this)
+
+						// 3. Check if the email bounced
+						var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+						if (user?.IsEmailBounced == true)
+						{
+							string bounceReason = user.BounceReason ?? "Unknown";
+							await _userService.DeleteUser(model.Email);
+
+							return BadRequest(new UserManagerResponse
+							{
+								Messege = $"Email verification failed. Reason: {bounceReason}",
+								IsSuccess = false
+							});
+						}
+
 						if (emailSent)
 						{
 							return Ok(new UserManagerResponse
@@ -82,6 +101,21 @@ namespace IdealTrip.Controllers
 					{
 						// Send OTP to user's email
 						var emailSent = await _userService.SendEmailVerificationAsync(model.Email);
+						await Task.Delay(5000); // Wait 5 seconds (you can tweak this)
+
+						// 3. Check if the email bounced
+						var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+						if (user?.IsEmailBounced == true)
+						{
+							string bounceReason = user.BounceReason ?? "Unknown";
+							await _userService.DeleteUser(model.Email);
+
+							return BadRequest(new UserManagerResponse
+							{
+								Messege = $"Email verification failed. Reason: {bounceReason}",
+								IsSuccess = false
+							});
+						}
 						if (emailSent)
 						{
 							return Ok(new UserManagerResponse
@@ -124,6 +158,21 @@ namespace IdealTrip.Controllers
 					{
 						// Send OTP to user's email
 						var emailSent = await _userService.SendEmailVerificationAsync(model.Email);
+						await Task.Delay(5000); // Wait 5 seconds (you can tweak this)
+
+						// 3. Check if the email bounced
+						var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+						if (user?.IsEmailBounced == true)
+						{
+							string bounceReason = user.BounceReason ?? "Unknown";
+							await _userService.DeleteUser(model.Email);
+
+							return BadRequest(new UserManagerResponse
+							{
+								Messege = $"Email verification failed. Reason: {bounceReason}",
+								IsSuccess = false
+							});
+						}
 						if (emailSent)
 						{
 							return Ok(new UserManagerResponse
@@ -166,6 +215,21 @@ namespace IdealTrip.Controllers
 					{
 						// Send OTP to user's email
 						var emailSent = await _userService.SendEmailVerificationAsync(model.Email);
+						await Task.Delay(5000); // Wait 5 seconds (you can tweak this)
+
+						// 3. Check if the email bounced
+						var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+						if (user?.IsEmailBounced == true)
+						{
+							string bounceReason = user.BounceReason ?? "Unknown";
+							await _userService.DeleteUser(model.Email);
+
+							return BadRequest(new UserManagerResponse
+							{
+								Messege = $"Email verification failed. Reason: {bounceReason}",
+								IsSuccess = false
+							});
+						}
 						if (emailSent)
 						{
 							return Ok(new UserManagerResponse
@@ -209,6 +273,21 @@ namespace IdealTrip.Controllers
 					{
 						// Send OTP to user's email
 						var emailSent = await _userService.SendEmailVerificationAsync(model.Email);
+						await Task.Delay(5000); // Wait 5 seconds (you can tweak this)
+
+						// 3. Check if the email bounced
+						var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+						if (user?.IsEmailBounced == true)
+						{
+							string bounceReason = user.BounceReason ?? "Unknown";
+							await _userService.DeleteUser(model.Email);
+
+							return BadRequest(new UserManagerResponse
+							{
+								Messege = $"Email verification failed. Reason: {bounceReason}",
+								IsSuccess = false
+							});
+						}
 						if (emailSent)
 						{
 							return Ok(new UserManagerResponse

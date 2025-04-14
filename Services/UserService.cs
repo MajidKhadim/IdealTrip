@@ -1215,6 +1215,7 @@ namespace IdealTrip.Services
 
 				result.AddRange(hotelBookings.Select(b => new UserBookingSummaryDto
 				{
+					BookingId =b.BookingId,
 					BookingType = "Hotel",
 					ServiceName = b.HotelRoom.Hotel.HotelName,
 					Location = null,
