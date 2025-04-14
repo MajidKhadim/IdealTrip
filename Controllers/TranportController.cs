@@ -25,7 +25,7 @@ namespace IdealTrip.Controllers
 		private readonly IHttpContextAccessor _contextAccessor;
 		private readonly IHubContext<NotificationHub> _hubContext;
 
-		public TransportController(ApplicationDbContext context, PaymentService paymentService, EmailService emailService, IHttpContextAccessor contextAccessor,IHubContext<NotificationHub> hubContext)
+		public TransportController(ApplicationDbContext context, PaymentService paymentService, EmailService emailService, IHttpContextAccessor contextAccessor, IHubContext<NotificationHub> hubContext)
 		{
 			_context = context;
 			_paymentService = paymentService;
@@ -335,7 +335,7 @@ namespace IdealTrip.Controllers
 				booking.TransportId = Guid.Parse(model.TransportId);
 				booking.TicketPrice = transport.TicketPrice;
 				booking.TotalFare = transport.TicketPrice * model.SeatsBooked;
-				booking.Status = "Pending";
+				booking.Status = BookingStatus.Pending.ToString();
 				booking.BookingDate = DateTime.Now;
 				booking.CreatedAt = DateTime.Now;
 				booking.UserId = Guid.Parse(userId);
@@ -402,7 +402,7 @@ namespace IdealTrip.Controllers
 				try
 				{
 					// ✅ Update booking status and store PaymentIntentId
-					booking.Status = "Paid";
+					booking.Status = BookingStatus.Paid.ToString();
 					booking.PaymentIntentId = paymentData.PaymentIntentId;
 					_context.UserTransportBookings.Update(booking);
 
@@ -459,6 +459,23 @@ namespace IdealTrip.Controllers
 );
 
 					await _emailService.SendEmailAsync(booking.User.Email, "🚍 Transport Booking Confirmed", emailContent);
+
+					string ownerEmailContent = EmailTemplates.TransportBookingOwnerNotificationTemplate(
+	booking.Transport.Owner.FullName,
+	booking.User.FullName,
+	booking.User.Email,
+	booking.Transport.Name,
+	booking.Transport.Type,
+	booking.Transport.StartLocation,
+	booking.Transport.Destination,
+	booking.Transport.DepartureTime,
+	booking.BookingDate,
+	booking.SeatsBooked,
+	booking.TotalFare.ToString("F2"),
+	booking.PaymentIntentId
+);
+
+					await _emailService.SendEmailAsync(booking.Transport.Owner.Email, "🚍 Your Transport Just Got Booked!", ownerEmailContent);
 
 
 					await transaction.CommitAsync();
@@ -525,7 +542,8 @@ namespace IdealTrip.Controllers
 			{
 				return Unauthorized(new { IsSuccess = false, Message = "Unauthorized action." });
 			}
-			try {
+			try
+			{
 
 				var transport = await _context.Transports.FindAsync(id);
 				if (transport == null || transport.OwnerId != Guid.Parse(userId))
@@ -552,13 +570,14 @@ namespace IdealTrip.Controllers
 		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 		[HttpGet("user-bookings")]
 		public async Task<IActionResult> GetUserBookings()
+		{
+			var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+			if (string.IsNullOrEmpty(userId))
 			{
-				var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-				if (string.IsNullOrEmpty(userId))
-				{
-					return Unauthorized(new { IsSuccess = false, Message = "Unauthorized action." });
-				}
-				try { 
+				return Unauthorized(new { IsSuccess = false, Message = "Unauthorized action." });
+			}
+			try
+			{
 
 				var bookings = await _context.UserTransportBookings
 					.Where(b => b.UserId == Guid.Parse(userId))

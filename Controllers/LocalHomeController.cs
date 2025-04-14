@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Stripe.Terminal;
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -598,7 +599,7 @@ namespace IdealTrip.Controllers
 
 				// Check if the home is available for the requested date range
 				var existingBookings = await _context.UserLocalHomesBookings
-					.Where(b => b.LocalHomeId == booking.LocalHomeId && b.Status == "Pending" || b.Status == "Confirmed")
+					.Where(b => b.LocalHomeId == booking.LocalHomeId && b.Status == BookingStatus.Paid.ToString())
 					.ToListAsync();
 
 				foreach (var existingBooking in existingBookings)
@@ -738,6 +739,24 @@ namespace IdealTrip.Controllers
 );
 
 					await _emailService.SendEmailAsync(booking.User.Email, "🏠 Local Home Booking Confirmed", emailContent);
+					// ✅ Send Email to Local Home Owner
+					string ownerEmailContent = EmailTemplates.LocalHomeBookingOwnerNotificationTemplate(
+						booking.LocalHome.Owner.FullName,
+						booking.User.FullName,
+						booking.LocalHome.Name,
+						booking.StartDate,
+						booking.EndDate,
+						booking.TotalDays,
+						booking.TotalAmount.ToString("F2"),
+						booking.PaymentIntentId,
+						booking.BookingDate
+					);
+
+					await _emailService.SendEmailAsync(
+						booking.LocalHome.Owner.Email,
+						"🏠 Your Local Home Has Been Booked!",
+						ownerEmailContent
+					);
 
 
 					await transaction.CommitAsync();
@@ -902,6 +921,59 @@ namespace IdealTrip.Controllers
 					IsSuccess = true,
 					Data = feedbacks,
 					Message = "Feedback retrieved successfully."
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new DataSendingResponse
+				{
+					IsSuccess = false,
+					Message = "Internal Server Error",
+					Errors = new List<string> { ex.Message }
+				});
+			}
+		}
+
+		[HttpGet("/my-homes")]
+		public async Task<IActionResult> GetLocalHomesOfLocalHomeOwner()
+		{
+			try
+			{
+				var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+				if (string.IsNullOrEmpty(userId))
+				{
+					return Unauthorized(new DataSendingResponse { IsSuccess = false, Message = "Unauthorized action." });
+				}
+				var query = _context.LocalHomes.Where(h => h.OwnerId.ToString() == userId);
+
+				var localHomes = await query.Select(lh => new
+				{
+					lh.Id,
+					lh.Name,
+					lh.Description,
+					lh.AddressLine,
+					lh.AvailableFrom,
+					lh.AvailableTo,
+					lh.Capacity,
+					lh.PricePerNight,
+					lh.Rating,
+					ImageUrl = _context.ServiceImages
+						.Where(img => img.ServiceId == lh.Id &&
+									 img.ServiceType == Service.LocalHome.ToString() &&
+									 img.IsPrimary)
+						.Select(img => img.ImageUrl)
+						.FirstOrDefault()
+				}).ToListAsync();
+
+				return Ok(new UserManagerResponse
+				{
+					Messege = "Local homes retrieved successfully",
+					IsSuccess = true,
+					Data = new
+					{
+						TotalRecords = localHomes.Count,
+						LocalHomes = localHomes
+					}
 				});
 			}
 			catch (Exception ex)

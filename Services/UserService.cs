@@ -1203,91 +1203,185 @@ namespace IdealTrip.Services
 				: new UserManagerResponse { IsSuccess = false, Messege = "Error deleting user." };
 		}
 
+		//public async Task<UserManagerResponse> GetUsersAllBookings(string userId)
+		//{
+		//		var result = new List<UserBookingSummaryDto>();
+
+		//		// 🏨 Hotel Room Bookings
+		//		var hotelBookings = await _context.UserHotelRoomBookings
+		//			.Include(b => b.HotelRoom).ThenInclude(r => r.Hotel)
+		//			.Where(b => b.UserId.ToString() == userId)
+		//			.ToListAsync();
+
+		//		result.AddRange(hotelBookings.Select(b => new UserBookingSummaryDto
+		//		{
+		//			BookingId =b.BookingId,
+		//			BookingType = "Hotel",
+		//			ServiceName = b.HotelRoom.Hotel.HotelName,
+		//			Location = null,
+		//			BookingDate = b.BookingTime,
+		//			AmountPaid = b.TotalAmount,
+		//			NumberOfPeople = null,
+		//			Status = b.Status
+		//		}));
+
+		//		// 🏡 Local Home Bookings
+		//		var localHomeBookings = await _context.UserLocalHomesBookings
+		//			.Include(b => b.LocalHome)
+		//			.Where(b => b.UserId.ToString() == userId)
+		//			.ToListAsync();
+
+		//		result.AddRange(localHomeBookings.Select(b => new UserBookingSummaryDto
+		//		{
+		//			BookingId = b.Id,
+		//			BookingType = "LocalHome",
+		//			ServiceName = b.LocalHome.Name,
+		//			Location = null,
+		//			BookingDate = b.BookingDate,
+		//			NumberOfPeople = null,
+		//			AmountPaid = b.TotalAmount,
+		//			Status = b.Status
+		//		}));
+
+		//		// 🚍 Transport Bookings
+		//		var transportBookings = await _context.UserTransportBookings
+		//			.Include(b => b.Transport)
+		//			.Where(b => b.UserId.ToString() == userId)
+		//			.ToListAsync();
+
+		//		result.AddRange(transportBookings.Select(b => new UserBookingSummaryDto
+		//		{
+		//			BookingId= b.Id,
+		//			BookingType = "Transport",
+		//			ServiceName = b.Transport.Name,
+		//			Location = $"{b.Transport.StartLocation} → {b.Transport.Destination}",
+		//			BookingDate = b.BookingDate,
+		//			NumberOfPeople = b.SeatsBooked,
+		//			AmountPaid = b.TotalFare,
+		//			Status = b.Status
+		//		}));
+
+		//		// 🧭 Tour Guide Bookings
+		//		var tourGuideBookings = await _context.UserTourGuideBookings
+		//			.Include(b => b.TourGuide)
+		//			.Where(b => b.UserId.ToString() == userId)
+		//			.ToListAsync();
+
+		//		result.AddRange(tourGuideBookings.Select(b => new UserBookingSummaryDto
+		//		{
+		//			BookingId= b.Id,
+		//			BookingType = "TourGuide",
+		//			ServiceName = b.TourGuide.FullName,
+		//			Location = null,
+		//			BookingDate = b.BookingDate,
+		//			AmountPaid = b.TotalAmount,
+		//			NumberOfPeople = null,
+		//			Status = b.Status
+		//		}));
+
+		//		// Sort by BookingDate (most recent first)
+		//		return new UserManagerResponse
+		//		{
+		//			IsSuccess = true,
+		//			Messege = "Bookings Retrieved Successfully",
+		//			Data = result.OrderByDescending(b => b.BookingDate).ToList()
+		//		};
+
+		//}
+
 		public async Task<UserManagerResponse> GetUsersAllBookings(string userId)
 		{
-				var result = new List<UserBookingSummaryDto>();
+			var result = new List<UserBookingSummaryDto>();
 
-				// 🏨 Hotel Room Bookings
-				var hotelBookings = await _context.UserHotelRoomBookings
-					.Include(b => b.HotelRoom).ThenInclude(r => r.Hotel)
-					.Where(b => b.UserId.ToString() == userId)
-					.ToListAsync();
+			// 🏨 Hotel Room Bookings
+			var hotelBookings = await _context.UserHotelRoomBookings
+				.Include(b => b.HotelRoom).ThenInclude(r => r.Hotel)
+				.Where(b => b.UserId.ToString() == userId)
+				.ToListAsync();
 
-				result.AddRange(hotelBookings.Select(b => new UserBookingSummaryDto
-				{
-					BookingId =b.BookingId,
-					BookingType = "Hotel",
-					ServiceName = b.HotelRoom.Hotel.HotelName,
-					Location = null,
-					BookingDate = b.BookingTime,
-					AmountPaid = b.TotalAmount,
-					NumberOfPeople = null,
-					Status = b.Status
-				}));
+			result.AddRange(hotelBookings.Select(b => new UserBookingSummaryDto
+			{
+				BookingId = b.BookingId,
+				BookingType = "Hotel",
+				ServiceName = b.HotelRoom.Hotel.HotelName,
+				Location = null,
+				BookingDate = b.BookingTime,
+				AmountPaid = b.TotalAmount,
+				NumberOfPeople = null,
+				Status = b.Status,
+				StartDate = b.CheckInDate,
+				EndDate = b.CheckOutDate
+			}));
 
-				// 🏡 Local Home Bookings
-				var localHomeBookings = await _context.UserLocalHomesBookings
-					.Include(b => b.LocalHome)
-					.Where(b => b.UserId.ToString() == userId)
-					.ToListAsync();
+			// 🏡 Local Home Bookings
+			var localHomeBookings = await _context.UserLocalHomesBookings
+				.Include(b => b.LocalHome)
+				.Where(b => b.UserId.ToString() == userId)
+				.ToListAsync();
 
-				result.AddRange(localHomeBookings.Select(b => new UserBookingSummaryDto
-				{
-					BookingId = b.Id,
-					BookingType = "LocalHome",
-					ServiceName = b.LocalHome.Name,
-					Location = null,
-					BookingDate = b.BookingDate,
-					NumberOfPeople = null,
-					AmountPaid = b.TotalAmount,
-					Status = b.Status
-				}));
+			result.AddRange(localHomeBookings.Select(b => new UserBookingSummaryDto
+			{
+				BookingId = b.Id,
+				BookingType = "LocalHome",
+				ServiceName = b.LocalHome.Name,
+				Location = null,
+				BookingDate = b.BookingDate,
+				AmountPaid = b.TotalAmount,
+				NumberOfPeople = null,
+				Status = b.Status,
+				StartDate = b.StartDate,
+				EndDate = b.EndDate
+			}));
 
-				// 🚍 Transport Bookings
-				var transportBookings = await _context.UserTransportBookings
-					.Include(b => b.Transport)
-					.Where(b => b.UserId.ToString() == userId)
-					.ToListAsync();
+			// 🚍 Transport Bookings
+			var transportBookings = await _context.UserTransportBookings
+				.Include(b => b.Transport)
+				.Where(b => b.UserId.ToString() == userId)
+				.ToListAsync();
 
-				result.AddRange(transportBookings.Select(b => new UserBookingSummaryDto
-				{
-					BookingId= b.Id,
-					BookingType = "Transport",
-					ServiceName = b.Transport.Name,
-					Location = $"{b.Transport.StartLocation} → {b.Transport.Destination}",
-					BookingDate = b.BookingDate,
-					NumberOfPeople = b.SeatsBooked,
-					AmountPaid = b.TotalFare,
-					Status = b.Status
-				}));
+			result.AddRange(transportBookings.Select(b => new UserBookingSummaryDto
+			{
+				BookingId = b.Id,
+				BookingType = "Transport",
+				ServiceName = b.Transport.Name,
+				Location = $"{b.Transport.StartLocation} → {b.Transport.Destination}",
+				BookingDate = b.BookingDate,
+				AmountPaid = b.TotalFare,
+				NumberOfPeople = b.SeatsBooked,
+				Status = b.Status,
+				StartDate = null,
+				EndDate = null
+			}));
 
-				// 🧭 Tour Guide Bookings
-				var tourGuideBookings = await _context.UserTourGuideBookings
-					.Include(b => b.TourGuide)
-					.Where(b => b.UserId.ToString() == userId)
-					.ToListAsync();
+			// 🧭 Tour Guide Bookings
+			var tourGuideBookings = await _context.UserTourGuideBookings
+				.Include(b => b.TourGuide)
+				.Where(b => b.UserId.ToString() == userId)
+				.ToListAsync();
 
-				result.AddRange(tourGuideBookings.Select(b => new UserBookingSummaryDto
-				{
-					BookingId= b.Id,
-					BookingType = "TourGuide",
-					ServiceName = b.TourGuide.FullName,
-					Location = null,
-					BookingDate = b.BookingDate,
-					AmountPaid = b.TotalAmount,
-					NumberOfPeople = null,
-					Status = b.Status
-				}));
+			result.AddRange(tourGuideBookings.Select(b => new UserBookingSummaryDto
+			{
+				BookingId = b.Id,
+				BookingType = "TourGuide",
+				ServiceName = b.TourGuide.FullName,
+				Location = null,
+				BookingDate = b.BookingDate,
+				AmountPaid = b.TotalAmount,
+				NumberOfPeople = null,
+				Status = b.Status,
+				StartDate = DateOnly.FromDateTime(b.StartDate),
+				EndDate = DateOnly.FromDateTime(b.EndDate)
+			}));
 
-				// Sort by BookingDate (most recent first)
-				return new UserManagerResponse
-				{
-					IsSuccess = true,
-					Messege = "Bookings Retrieved Successfully",
-					Data = result.OrderByDescending(b => b.BookingDate).ToList()
-				};
-
+			// Sort by BookingDate (most recent first)
+			return new UserManagerResponse
+			{
+				IsSuccess = true,
+				Messege = "Bookings Retrieved Successfully",
+				Data = result.OrderByDescending(b => b.BookingDate).ToList()
+			};
 		}
+
 		public async Task<UserManagerResponse> GetUserBookingDetails(string bookingType, string bookingId)
 		{
 			switch (bookingType)

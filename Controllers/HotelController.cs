@@ -944,7 +944,7 @@ namespace IdealTrip.Controllers
 
 				// Booking conflict check
 				var existingBookings = await _context.UserHotelRoomBookings
-					.Where(b => b.RoomId.ToString() == booking.HotelRoomId && (b.Status == "Pending" || b.Status == "Paid"))
+					.Where(b => b.RoomId.ToString() == booking.HotelRoomId && ( b.Status == BookingStatus.Paid.ToString()))
 					.ToListAsync();
 
 				bool hasConflict = existingBookings.Any(existing =>
@@ -1071,6 +1071,21 @@ namespace IdealTrip.Controllers
 );
 
 				await _emailService.SendEmailAsync(booking.Tourist.Email, "Hotel Booking Confirmation", emailContent);
+				var ownerEmailContent = EmailTemplates.HotelOwnerBookingNotificationTemplate(
+	booking.HotelRoom.Hotel.Owner.FullName,
+	booking.Tourist.FullName,
+	booking.Tourist.Email,
+	booking.HotelRoom.Hotel.HotelName,
+	booking.HotelRoom.RoomType.ToString(),
+	booking.CheckInDate,
+	booking.CheckOutDate,
+	paymentData.PaymentIntentId,
+	booking.TotalAmount,
+	booking.BookingTime
+);
+
+				await _emailService.SendEmailAsync(booking.HotelRoom.Hotel.Owner.Email, "🏨 New Hotel Booking Received", ownerEmailContent);
+
 
 				await transaction.CommitAsync();
 

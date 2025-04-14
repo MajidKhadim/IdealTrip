@@ -778,6 +778,196 @@
 		</body>
 		</html>";
 		}
+		public static string LocalHomeBookingOwnerNotificationTemplate(
+	string ownerName,
+	string touristName,
+	string homeName,
+	DateOnly startDate,
+	DateOnly endDate,
+	int totalDays,
+	string amount,
+	string paymentIntentId,
+	DateTime bookingDate)
+		{
+			return $@"
+		<div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;'>
+			<div style='text-align: center;'>
+				<img src='https://i.imgur.com/NhQZ5uX.png' alt='Booking Confirmed' style='width: 100%; max-height: 200px; object-fit: cover; border-radius: 10px;' />
+				<h2 style='color: #2c3e50;'>Your Local Home Has Been Booked! 🎉</h2>
+			</div>
+			<p>Hi <strong>{ownerName}</strong>,</p>
+			<p>
+				Your local home <strong style='color:#2980b9'>{homeName}</strong> has just been booked by <strong>{touristName}</strong>.
+				Here's a summary of the booking:
+			</p>
+			<table style='width: 100%; border-collapse: collapse; margin-top: 15px;'>
+				<tr>
+					<td style='padding: 8px; font-weight: bold;'>📅 Booking Date:</td>
+					<td style='padding: 8px;'>{bookingDate:MMMM dd, yyyy}</td>
+				</tr>
+				<tr>
+					<td style='padding: 8px; font-weight: bold;'>🧳 Guest Name:</td>
+					<td style='padding: 8px;'>{touristName}</td>
+				</tr>
+				<tr>
+					<td style='padding: 8px; font-weight: bold;'>🏠 Stay Duration:</td>
+					<td style='padding: 8px;'>{startDate:MMMM dd} - {endDate:MMMM dd} ({totalDays} nights)</td>
+				</tr>
+				<tr>
+					<td style='padding: 8px; font-weight: bold;'>💰 Total Amount:</td>
+					<td style='padding: 8px;'>₹{amount}</td>
+				</tr>
+				<tr>
+					<td style='padding: 8px; font-weight: bold;'>🔐 Payment ID:</td>
+					<td style='padding: 8px;'>{paymentIntentId}</td>
+				</tr>
+			</table>
+
+			<p style='margin-top: 20px;'>Please make sure the property is ready and contactable before the guest's arrival. 🙌</p>
+
+			<hr style='margin: 30px 0;' />
+
+			<p style='font-size: 14px; color: #7f8c8d;'>
+				Need help? Contact our support team anytime.<br />
+				Thanks for being a valued part of <strong>Ideal Trip</strong>.
+			</p>
+		</div>
+	";
+		}
+
+		public static string TransportBookingOwnerNotificationTemplate(
+	string ownerName,
+	string touristName,
+	string touristEmail,
+	string transportName,
+	string transportType,
+	string startLocation,
+	string destination,
+	DateTime departureTime,
+	DateTime bookingDate,
+	int seatsBooked,
+	string totalFare,
+	string paymentIntentId)
+		{
+			return $@"
+		<div style='font-family: Arial, sans-serif; max-width: 650px; margin: auto; border: 1px solid #e5e5e5; border-radius: 12px; overflow: hidden;'>
+			<div style='background-color: #2980b9; color: white; padding: 20px; text-align: center;'>
+				<h2 style='margin: 0;'>🚍 Ideal Trip – New Transport Booking</h2>
+			</div>
+			<div style='padding: 20px; background-color: #f9f9f9;'>
+				<p>Hi <strong>{ownerName}</strong>,</p>
+				<p>Good news! Your <strong>{transportType}</strong> <span style='color: #2980b9;'>{transportName}</span> has just been booked by <strong>{touristName}</strong>.</p>
+
+				<div style='background-color: white; border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin-top: 20px;'>
+					<table style='width: 100%; font-size: 15px;'>
+						<tr>
+							<td><strong>📅 Booking Date:</strong></td>
+							<td>{bookingDate:MMMM dd, yyyy}</td>
+						</tr>
+						<tr>
+							<td><strong>🛣️ Route:</strong></td>
+							<td>{startLocation} → {destination}</td>
+						</tr>
+						<tr>
+							<td><strong>🕒 Departure:</strong></td>
+							<td>{departureTime:hh:mm tt}</td>
+						</tr>
+						<tr>
+							<td><strong>🪑 Seats Booked:</strong></td>
+							<td>{seatsBooked}</td>
+						</tr>
+						<tr>
+							<td><strong>💰 Total Fare:</strong></td>
+							<td>₹{totalFare}</td>
+						</tr>
+						<tr>
+							<td><strong>🔐 Payment ID:</strong></td>
+							<td>{paymentIntentId}</td>
+						</tr>
+					</table>
+				</div>
+
+				<p style='margin-top: 20px;'>Need to contact the passenger? Use the button below:</p>
+				<div style='text-align: center; margin-top: 10px;'>
+					<a href='mailto:{touristEmail}' style='background-color: #27ae60; color: white; text-decoration: none; padding: 12px 20px; border-radius: 8px; display: inline-block; font-weight: bold;'>📧 Contact {touristName}</a>
+				</div>
+
+				<p style='margin-top: 30px;'>Thank you for providing a reliable transport experience on <strong>Ideal Trip</strong>. Keep up the great service! 🌟</p>
+			</div>
+			<div style='background-color: #ecf0f1; padding: 15px; text-align: center; font-size: 13px; color: #7f8c8d;'>
+				Need help? Reach us at <a href='mailto:support@idealtrip.com'>support@idealtrip.com</a><br />
+				&copy; {DateTime.Now.Year} Ideal Trip. All rights reserved.
+			</div>
+		</div>";
+		}
+		public static string HotelOwnerBookingNotificationTemplate(
+			string ownerName,
+			string guestName,
+			string guestEmail,
+			string hotelName,
+			string roomType,
+			DateOnly checkIn,
+			DateOnly checkOut,
+			string paymentIntentId,
+			decimal totalAmount,
+			DateTime bookingDate)
+		{
+			return $@"
+		<div style='font-family: Arial, sans-serif; max-width: 650px; margin: auto; border: 1px solid #e5e5e5; border-radius: 12px; overflow: hidden;'>
+			<div style='background-color: #2c3e50; color: white; padding: 20px; text-align: center;'>
+				<h2 style='margin: 0;'>🏨 Ideal Trip – New Room Booking</h2>
+			</div>
+			<div style='padding: 20px; background-color: #f9f9f9;'>
+				<p>Hi <strong>{ownerName}</strong>,</p>
+				<p>Your hotel <strong>{hotelName}</strong> has just received a new room booking from <strong>{guestName}</strong>.</p>
+
+				<div style='background-color: white; border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin-top: 20px;'>
+					<table style='width: 100%; font-size: 15px;'>
+						<tr>
+							<td><strong>🏨 Hotel Name:</strong></td>
+							<td>{hotelName}</td>
+						</tr>
+						<tr>
+							<td><strong>🛏️ Room Type:</strong></td>
+							<td>{roomType}</td>
+						</tr>
+						<tr>
+							<td><strong>📅 Check-In:</strong></td>
+							<td>{checkIn:dd MMM yyyy}</td>
+						</tr>
+						<tr>
+							<td><strong>📅 Check-Out:</strong></td>
+							<td>{checkOut:dd MMM yyyy}</td>
+						</tr>
+						<tr>
+							<td><strong>💳 Payment ID:</strong></td>
+							<td>{paymentIntentId}</td>
+						</tr>
+						<tr>
+							<td><strong>💰 Total Paid:</strong></td>
+							<td>₹{totalAmount:F2}</td>
+						</tr>
+						<tr>
+							<td><strong>📆 Booking Date:</strong></td>
+							<td>{bookingDate:dd MMM yyyy, hh:mm tt}</td>
+						</tr>
+					</table>
+				</div>
+
+				<p style='margin-top: 20px;'>Need to contact the guest? Click below:</p>
+				<div style='text-align: center; margin-top: 10px;'>
+					<a href='mailto:{guestEmail}' style='background-color: #2980b9; color: white; text-decoration: none; padding: 12px 20px; border-radius: 8px; display: inline-block; font-weight: bold;'>📧 Contact {guestName}</a>
+				</div>
+
+				<p style='margin-top: 30px;'>Thanks for hosting with <strong>Ideal Trip</strong> – where great stays begin! 🌍</p>
+			</div>
+			<div style='background-color: #ecf0f1; padding: 15px; text-align: center; font-size: 13px; color: #7f8c8d;'>
+				Need help? Email <a href='mailto:support@idealtrip.com'>support@idealtrip.com</a><br />
+				&copy; {DateTime.Now.Year} Ideal Trip. All rights reserved.
+			</div>
+		</div>";
+		}
+
 
 
 
