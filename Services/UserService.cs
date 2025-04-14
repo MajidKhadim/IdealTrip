@@ -1233,6 +1233,7 @@ namespace IdealTrip.Services
 
 				result.AddRange(localHomeBookings.Select(b => new UserBookingSummaryDto
 				{
+					BookingId = b.Id,
 					BookingType = "LocalHome",
 					ServiceName = b.LocalHome.Name,
 					Location = null,
@@ -1250,6 +1251,7 @@ namespace IdealTrip.Services
 
 				result.AddRange(transportBookings.Select(b => new UserBookingSummaryDto
 				{
+					BookingId= b.Id,
 					BookingType = "Transport",
 					ServiceName = b.Transport.Name,
 					Location = $"{b.Transport.StartLocation} → {b.Transport.Destination}",
@@ -1267,6 +1269,7 @@ namespace IdealTrip.Services
 
 				result.AddRange(tourGuideBookings.Select(b => new UserBookingSummaryDto
 				{
+					BookingId= b.Id,
 					BookingType = "TourGuide",
 					ServiceName = b.TourGuide.FullName,
 					Location = null,
