@@ -23,7 +23,7 @@ namespace IdealTrip.Models.Hotels
 
         public int TotalDays { get; set; }
         [Required]
-        public string PaymentIntentId { get; set; }
+        public string? PaymentIntentId { get; set; }
         [Required]
         public string Status { get; set; } // "Pending", "Paid", "Cancelled"
         public DateTime BookingTime { get; set; } = DateTime.Now;

@@ -179,7 +179,7 @@ namespace IdealTrip.Controllers
 			try
 			{
 				var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-				var home = await _context.LocalHomes.FirstOrDefaultAsync(h => h.Id == id);
+				var home = await _context.LocalHomes.FirstOrDefaultAsync(h => h.Id == id && !h.IsDeleted);
 				if (home == null)
 				{
 					return NotFound(new DataSendingResponse { IsSuccess = false, Message = "Local home not found." });
@@ -315,7 +315,7 @@ namespace IdealTrip.Controllers
 			try
 			{
 				var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-				var home = await _context.LocalHomes.FirstOrDefaultAsync(h => h.Id == id);
+				var home = await _context.LocalHomes.FirstOrDefaultAsync(h => h.Id == id && !h.IsDeleted);
 				if (home == null)
 				{
 					return NotFound(new DataSendingResponse { IsSuccess = false, Message = "Local home not found." });
@@ -324,24 +324,8 @@ namespace IdealTrip.Controllers
 				{
 					return Forbid();
 				}
-
-				// ✅ Fetch images from the ServiceImages table
-				var serviceImages = await _context.ServiceImages
-					.Where(img => img.ServiceId == home.Id && img.ServiceType == Service.LocalHome.ToString())
-					.ToListAsync();
-
-				// ✅ Delete images from the folder
-				string homeFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/PropertyImages/LocalHomes", home.Id.ToString());
-				if (Directory.Exists(homeFolderPath))
-				{
-					Directory.Delete(homeFolderPath, true);
-				}
-
-				// ✅ Remove images from the database
-				_context.ServiceImages.RemoveRange(serviceImages);
-
-				// ✅ Remove the LocalHome record
-				_context.LocalHomes.Remove(home);
+				home.IsDeleted = true;
+				_context.Update(home);
 				await _context.SaveChangesAsync();
 
 				return Ok(new DataSendingResponse
@@ -373,7 +357,7 @@ namespace IdealTrip.Controllers
 		{
 			try
 			{
-				var query = _context.LocalHomes.Where(h => h.IsAvailable);
+				var query = _context.LocalHomes.Where(h => h.IsAvailable && !h.IsDeleted && !h.Owner.IsDeleted);
 
 				// Location filter
 				if (!string.IsNullOrEmpty(location))
@@ -463,7 +447,7 @@ namespace IdealTrip.Controllers
 			try
 			{
 				var localHome = await _context.LocalHomes
-					.Where(h => h.Id == id && h.IsAvailable)
+					.Where(h => h.Id == id && h.IsAvailable && !h.IsDeleted && !h.Owner.IsDeleted)
 					.Select(lh => new
 					{
 						lh.Id,
@@ -792,7 +776,7 @@ namespace IdealTrip.Controllers
 					return Unauthorized(new DataSendingResponse { IsSuccess = false, Message = "Unauthorized action." });
 				}
 
-				var localHome = await _context.LocalHomes.FirstOrDefaultAsync(lh => lh.Id == request.ServiceId);
+				var localHome = await _context.LocalHomes.FirstOrDefaultAsync(lh => lh.Id == request.ServiceId && !lh.IsDeleted && !lh.Owner.IsDeleted);
 				if (localHome == null)
 				{
 					return NotFound(new DataSendingResponse
@@ -824,7 +808,6 @@ namespace IdealTrip.Controllers
 				localHome.Rating = ((float)averageRating);
 				_context.LocalHomes.Update(localHome);
 				await _context.SaveChangesAsync();
-
 				return Ok(new DataSendingResponse
 				{
 					IsSuccess = true,

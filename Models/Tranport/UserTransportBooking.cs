@@ -10,7 +10,7 @@ namespace IdealTrip.Models.Tranport_Booking
 		public int SeatsBooked { get; set; }
 		public decimal TicketPrice { get; set; } // Price per seat
 		public decimal TotalFare { get; set; } // SeatsBooked * (EndStop.FareFromStart - StartStop.FareFromStart)
-		public string PaymentIntentId { get; set; }
+		public string? PaymentIntentId { get; set; }
 		public string Status { get; set; } // "Pending", "Paid", "Cancelled"
 		public DateTime BookingDate { get; set; }
 		public DateTime CreatedAt { get; set; }

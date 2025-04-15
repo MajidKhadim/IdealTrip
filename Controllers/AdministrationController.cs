@@ -222,24 +222,50 @@ namespace IdealTrip.Controllers
 				});
 			}
 
-			var result = await _userManager.DeleteAsync(user);
-			if (result.Succeeded)
+			// Modify email & username to keep uniqueness intact
+			string timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+			user.Email = $"deleted_{timestamp}_{user.Email}";
+			user.NormalizedEmail = user.Email.ToUpper();
+			user.UserName = user.Email;
+			user.NormalizedUserName = user.Email.ToUpper();
+			user.IsDeleted = true;
+
+			try
 			{
-				return Ok(new DataSendingResponse
+				_context.Update(user);
+				var rowsAffected = await _context.SaveChangesAsync();
+
+				if (rowsAffected > 0)
 				{
-					IsSuccess = true,
-					Message = "User deleted successfully.",
-					Data = null
+					return Ok(new DataSendingResponse
+					{
+						IsSuccess = true,
+						Message = "User marked as deleted successfully.",
+						Data = null
+					});
+				}
+				else
+				{
+					return BadRequest(new DataSendingResponse
+					{
+						IsSuccess = false,
+						Message = "No changes saved.",
+						Data = null
+					});
+				}
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new DataSendingResponse
+				{
+					IsSuccess = false,
+					Message = "An error occurred while deleting the user.",
+					Errors = new List<string> { ex.Message }
 				});
 			}
-
-			return BadRequest(new DataSendingResponse
-			{
-				IsSuccess = false,
-				Message = "Failed to delete user.",
-				Errors = result.Errors.Select(e => e.Description)
-			});
 		}
+
+
 
 		[HttpGet("get-tourists")]
 		public async Task<ActionResult<DataSendingResponse>> GetTourists()

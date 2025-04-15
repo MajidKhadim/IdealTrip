@@ -51,7 +51,7 @@ namespace IdealTrip.Controllers
 			{
 				var query = _context.TourGuides
 					.Include(tg => tg.User)
-					.Where(tg => tg.IsAvailable && tg.User.Status == Models.Enums.ProofStatus.Verified)
+					.Where(tg => tg.IsAvailable && tg.User.Status == Models.Enums.ProofStatus.Verified && !tg.User.IsDeleted)
 					.AsQueryable();
 
 				// ✅ Apply filters
@@ -123,7 +123,7 @@ namespace IdealTrip.Controllers
 
 			try
 			{
-				var tourGuide = await _context.TourGuides.Where(tg => tg.Id == id)
+				var tourGuide = await _context.TourGuides.Where(tg => tg.Id == id && !tg.User.IsDeleted)
 				.Select(tg => new
 				{
 					tg.Id,
@@ -541,7 +541,7 @@ namespace IdealTrip.Controllers
 				}
 
 				// Check if tour guide exists
-				var tourGuide = await _context.TourGuides.FirstOrDefaultAsync(tg => tg.Id == request.ServiceId);
+				var tourGuide = await _context.TourGuides.FirstOrDefaultAsync(tg => tg.Id == request.ServiceId && !tg.User.IsDeleted);
 				if (tourGuide == null)
 				{
 					return NotFound(new DataSendingResponse

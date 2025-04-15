@@ -113,7 +113,7 @@ namespace IdealTrip.Models
 				.HasOne(b => b.Tourist)
 				.WithMany()
 				.HasForeignKey(b => b.UserId)
-				.OnDelete(DeleteBehavior.Restrict);
+				.OnDelete(DeleteBehavior.NoAction);
 			base.OnModelCreating(builder);
 
 		}

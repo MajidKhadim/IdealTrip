@@ -24,5 +24,6 @@ namespace IdealTrip.Models.Hotels
         public Guid HotelId { get; set; }
         public virtual Hotel Hotel { get; set; }
 
+        public bool IsDeleted { get; set; } = false;
     }
 }

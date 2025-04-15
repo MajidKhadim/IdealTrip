@@ -24,6 +24,8 @@ namespace IdealTrip.Models
 		public DateTime CreatedAt { get; set; } = DateTime.Now;
 		public bool IsEmailBounced { get; set; }
 		public string? BounceReason { get; set; }
-	}
+
+        public bool IsDeleted { get; set; } = false;
+    }
 
 }

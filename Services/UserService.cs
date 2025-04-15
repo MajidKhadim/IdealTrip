@@ -109,6 +109,7 @@ namespace IdealTrip.Services
 					PhoneNumber = model.PhoneNumber,
 					Address = model.Address,
 					Status = ProofStatus.Pending,
+					IsDeleted = false
 				};
 
 				var result = await _userManager.CreateAsync(user, model.Password);
@@ -192,6 +193,7 @@ namespace IdealTrip.Services
 					PhoneNumber = model.PhoneNumber,
 					Address = model.Address,
 					Status = ProofStatus.Pending,
+					IsDeleted = false
 				};
 
 				var result = await _userManager.CreateAsync(user, model.Password);
@@ -314,6 +316,7 @@ namespace IdealTrip.Services
 					PhoneNumber = model.PhoneNumber,
 					Address = model.Address,
 					Status = ProofStatus.Pending,
+					IsDeleted = false
 				};
 
 				var result = await _userManager.CreateAsync(user, model.Password);
@@ -542,7 +545,8 @@ namespace IdealTrip.Services
 					PhoneNumber = model.PhoneNumber,
 					Address = model.Address,
 					Status = ProofStatus.Pending, // Admin needs to verify first
-					IsEmailConfirmed = false
+					IsEmailConfirmed = false,
+					IsDeleted = false
 				};
 
 				var result = await _userManager.CreateAsync(user, model.Password);
@@ -653,6 +657,7 @@ namespace IdealTrip.Services
 					PhoneNumber = model.PhoneNumber,
 					Address = model.Address,
 					Status = ProofStatus.Verified,
+					IsDeleted = false
 				};
 
 				var result = await _userManager.CreateAsync(user, model.Password);

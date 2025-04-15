@@ -173,7 +173,7 @@ namespace IdealTrip.Controllers
 						Errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList()
 					});
 				}
-				var hotel = await _context.Hotels.FirstOrDefaultAsync(h => h.HotelId == hotelId && h.OwnerId == Guid.Parse(ownerId));
+				var hotel = await _context.Hotels.FirstOrDefaultAsync(h => h.HotelId == hotelId && h.OwnerId == Guid.Parse(ownerId) && !h.IsDeleted);
 				if (hotel == null)
 					return NotFound(new UserManagerResponse { IsSuccess = false, Messege = "Hotel not found!" });
 
@@ -283,11 +283,11 @@ namespace IdealTrip.Controllers
 						Errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList()
 					});
 				}
-				var hotel = await _context.Hotels.FirstOrDefaultAsync(h => h.HotelId == hotelId && h.OwnerId == Guid.Parse(ownerId));
+				var hotel = await _context.Hotels.FirstOrDefaultAsync(h => h.HotelId == hotelId && h.OwnerId == Guid.Parse(ownerId) && !h.IsDeleted);
 				if (hotel == null)
 					return NotFound(new UserManagerResponse { IsSuccess = false, Messege = "Hotel not found!" });
-
-				_context.Hotels.Remove(hotel);
+				hotel.IsDeleted= true;
+				_context.Hotels.Update(hotel);
 				await _context.SaveChangesAsync();
 
 				return Ok(new UserManagerResponse { IsSuccess = true, Messege = "Hotel deleted successfully" });
@@ -315,7 +315,7 @@ namespace IdealTrip.Controllers
 					});
 				}
 				var hotels = await _context.Hotels
-					.Where(h => h.OwnerId == Guid.Parse(ownerId))
+					.Where(h => h.OwnerId == Guid.Parse(ownerId) && !h.IsDeleted)
 					.Select(h => new
 					{
 						h.HotelId,
@@ -366,7 +366,7 @@ namespace IdealTrip.Controllers
 						Errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList()
 					});
 				}
-				var hotel = await _context.Hotels.FirstOrDefaultAsync(h => h.HotelId == hotelId && h.OwnerId == Guid.Parse(ownerId));
+				var hotel = await _context.Hotels.FirstOrDefaultAsync(h => h.HotelId == hotelId && h.OwnerId == Guid.Parse(ownerId) && !h.IsDeleted);
 				if (hotel == null)
 					return BadRequest(new UserManagerResponse { IsSuccess = false, Messege = "Invalid hotel or unauthorized!" });
 				var hotelRoom = new HotelRoom
@@ -479,7 +479,7 @@ namespace IdealTrip.Controllers
 				}
 
 				// Check if the hotel exists and belongs to the logged-in owner
-				var hotelExists = await _context.Hotels.AnyAsync(h => h.HotelId == hotelId && h.OwnerId == Guid.Parse(ownerId));
+				var hotelExists = await _context.Hotels.AnyAsync(h => h.HotelId == hotelId && h.OwnerId == Guid.Parse(ownerId) && !h.IsDeleted);
 				if (!hotelExists)
 					return NotFound(new UserManagerResponse { IsSuccess = false, Messege = "Hotel not found or unauthorized!" });
 
@@ -537,7 +537,7 @@ namespace IdealTrip.Controllers
 						Errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList()
 					});
 				}
-				var room = await _context.HotelRooms.Include(r => r.Hotel).FirstOrDefaultAsync(r => r.RoomId == roomId && r.Hotel.OwnerId == Guid.Parse(ownerId));
+				var room = await _context.HotelRooms.Include(r => r.Hotel).FirstOrDefaultAsync(r => r.RoomId == roomId && r.Hotel.OwnerId == Guid.Parse(ownerId) && !r.Hotel.IsDeleted && !r.IsDeleted);
 				string hotelId = _context.HotelRooms.FirstOrDefault(r => r.RoomId == roomId && r.Hotel.OwnerId == Guid.Parse(ownerId)).HotelId.ToString();
 				if (room == null)
 					return NotFound(new UserManagerResponse { IsSuccess = false, Messege = "Room not found" });
@@ -636,11 +636,12 @@ namespace IdealTrip.Controllers
 						Errors = new List<string> { "User not authorized" }
 					});
 				}
-				var room = await _context.HotelRooms.Include(r => r.Hotel).FirstOrDefaultAsync(r => r.RoomId == roomId && r.Hotel.OwnerId == Guid.Parse(ownerId));
+				var room = await _context.HotelRooms.Include(r => r.Hotel).FirstOrDefaultAsync(r => r.RoomId == roomId && r.Hotel.OwnerId == Guid.Parse(ownerId) && !r.IsDeleted && !r.Hotel.IsDeleted);
 				if (room == null)
 					return NotFound(new UserManagerResponse { IsSuccess = false, Messege = "Room not found or unauthorized!" });
 
-				_context.HotelRooms.Remove(room);
+				room.IsDeleted = true;
+				_context.HotelRooms.Update(room);
 				await _context.SaveChangesAsync();
 
 				return Ok(new UserManagerResponse { IsSuccess = true, Messege = "Room deleted successfully" });
@@ -671,7 +672,7 @@ namespace IdealTrip.Controllers
 			try
 			{
 				var query = _context.Hotels
-					.Where(h => h.IsAvailable)
+					.Where(h => h.IsAvailable && !h.IsDeleted && !h.Owner.IsDeleted)
 					.Include(h => h.Owner)
 					.AsQueryable();
 
@@ -750,9 +751,9 @@ namespace IdealTrip.Controllers
 			{
 				var hotel = await _context.Hotels
 					.Include(h => h.Owner)
-					.FirstOrDefaultAsync(h => h.HotelId == id && h.IsAvailable);
+					.FirstOrDefaultAsync(h => h.HotelId == id && h.IsAvailable && !h.Owner.IsDeleted);
 
-				if (hotel == null)
+				if (hotel == null || hotel.IsDeleted)
 					return NotFound(new DataSendingResponse { IsSuccess = true, Message = "Hotel not found" });
 
 				var rooms = await _context.HotelRooms
@@ -806,7 +807,7 @@ namespace IdealTrip.Controllers
 			{
 				var query = _context.HotelRooms
 					.Include(r => r.Hotel)
-					.Where(r => r.IsAvailable && r.Hotel.IsAvailable)
+					.Where(r => r.IsAvailable && r.Hotel.IsAvailable && !r.IsDeleted && !r.Hotel.IsDeleted && !r.Hotel.Owner.IsDeleted)
 					.AsQueryable();
 
 				if (hotelId.HasValue)
@@ -869,9 +870,9 @@ namespace IdealTrip.Controllers
 			{
 				var room = await _context.HotelRooms
 					.Include(r => r.Hotel)
-					.FirstOrDefaultAsync(r => r.RoomId == id && r.IsAvailable && r.Hotel.IsAvailable);
+					.FirstOrDefaultAsync(r => r.RoomId == id && r.IsAvailable && r.Hotel.IsAvailable && !r.IsDeleted && !r.Hotel.IsDeleted && !r.Hotel.Owner.IsDeleted);
 
-				if (room == null)
+				if (room == null )
 				{
 					return NotFound(new DataSendingResponse
 					{
@@ -939,7 +940,7 @@ namespace IdealTrip.Controllers
 					return BadRequest(new DataSendingResponse { IsSuccess = false, Message = "Start date must be before End Date." });
 
 				var hotelRoom = await _context.HotelRooms.FindAsync(booking.HotelRoomId);
-				if (hotelRoom == null)
+				if (hotelRoom == null || hotelRoom.IsDeleted || hotelRoom.Hotel.IsDeleted || hotelRoom.Hotel.Owner.IsDeleted)
 					return NotFound(new DataSendingResponse { IsSuccess = false, Message = "Room not available." });
 
 				// Booking conflict check
@@ -1121,7 +1122,7 @@ namespace IdealTrip.Controllers
 				if (string.IsNullOrEmpty(userId))
 					return Unauthorized(new DataSendingResponse { IsSuccess = false, Message = "Unauthorized action." });
 
-				var hotel = await _context.Hotels.FirstOrDefaultAsync(h => h.HotelId == request.ServiceId);
+				var hotel = await _context.Hotels.FirstOrDefaultAsync(h => h.HotelId == request.ServiceId && !h.IsDeleted && !h.Owner.IsDeleted);
 				if (hotel == null)
 					return NotFound(new DataSendingResponse { IsSuccess = false, Message = "Hotel not found." });
 

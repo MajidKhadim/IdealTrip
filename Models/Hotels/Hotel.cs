@@ -22,6 +22,7 @@ namespace IdealTrip.Models.Hotels
 		[ForeignKey("Owner")]
 		public Guid OwnerId { get; set; }
 		public virtual ApplicationUser Owner { get; set; }
+		public bool IsDeleted { get; set; } = false;
 
-	}
+    }
 }

@@ -53,6 +53,10 @@ namespace IdealTrip.Controllers
 			{
 				return Unauthorized(new DataSendingResponse { IsSuccess = false, Message = "Unauthorized action." });
 			}
+			if (model.DepartureTime <= DateTime.Now)
+			{
+				return BadRequest(new DataSendingResponse { IsSuccess = false, Message = "Kindly Add a Valid and Upcoming Departure Time" });
+			}
 			try
 			{
 				var transportId = Guid.NewGuid();
@@ -69,7 +73,8 @@ namespace IdealTrip.Controllers
 					DepartureTime = model.DepartureTime,
 					TicketPrice = model.PricePerSeat,
 					CreatedAt = DateTime.Now,
-					IsAvailable = true
+					IsAvailable = true,
+					IsDeleted = false
 				};
 
 				_context.Transports.Add(transport);
@@ -181,7 +186,7 @@ namespace IdealTrip.Controllers
 							.Where(si => si.ServiceId == t.Id && si.ServiceType == Service.Transport.ToString() && si.IsPrimary)
 							.Select(si => si.ImageUrl)
 							.FirstOrDefault()
-					})
+					}).Where(t => t.DepartureTime > DateTime.Now)
 					.ToListAsync();
 
 				return Ok(new
@@ -202,7 +207,7 @@ namespace IdealTrip.Controllers
 			}
 		}
 		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-		[Authorize]
+		[Authorize(Roles = ("Tourist"))]
 		[HttpGet("get-transport/{id}")]
 		public async Task<IActionResult> GetTransportById(Guid id)
 		{
@@ -282,7 +287,7 @@ namespace IdealTrip.Controllers
 							.Where(si => si.ServiceId == t.Id && si.ServiceType == Service.Transport.ToString() && si.IsPrimary)
 							.Select(si => si.ImageUrl)
 							.FirstOrDefault()
-					})
+					}).Where(t => t.DepartureTime <  DateTime.Now)
 					.ToListAsync();
 
 				return Ok(new
@@ -324,11 +329,14 @@ namespace IdealTrip.Controllers
 			try
 			{
 
-				var transport = await _context.Transports.FindAsync(model.TransportId);
+				var transport = await _context.Transports.FindAsync(Guid.Parse(model.TransportId));
 
 				if (!transport.IsAvailable)
 					return BadRequest(new { IsSuccess = false, Message = "Invalid booking details or bus not available." });
-
+				if(transport.DepartureTime < DateTime.Now)
+				{
+					return BadRequest();
+				}
 				if (transport.SeatsAvailable < model.SeatsBooked)
 					return BadRequest(new { IsSuccess = false, Message = "Not enough seats available." });
 				UserTransportBooking booking = new();
@@ -363,7 +371,7 @@ namespace IdealTrip.Controllers
 				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Message = "An error occurred while fetching rooms.",
+					Message = "An error occurred while booking",
 					Errors = new List<string> { ex.Message }
 				});
 			}
@@ -553,8 +561,8 @@ namespace IdealTrip.Controllers
 				{
 					return NotFound(new { IsSuccess = false, Message = "Transport not found or unauthorized." });
 				}
-
-				_context.Transports.Remove(transport);
+				transport.IsDeleted = true;
+				_context.Update(transport);
 				await _context.SaveChangesAsync();
 
 				return Ok(new { IsSuccess = true, Message = "Transport deleted successfully." });

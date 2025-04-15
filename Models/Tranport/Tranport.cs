@@ -23,7 +23,9 @@ namespace IdealTrip.Models.Tranport_Booking
 
 		public virtual ApplicationUser Owner { get; set; } // Navigation Property
 
-	}
+        public bool IsDeleted { get; set; } = false;
+
+    }
 
 
 }
