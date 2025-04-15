@@ -510,56 +510,6 @@ namespace IdealTrip.Controllers
 			}
 		}
 
-
-		//[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-		//[Authorize(Roles = "Tourist")]
-		//[HttpPost("booking/initiate")]
-		//public async Task<IActionResult> InitiateBooking([FromBody] LocalHomeBookingModel booking)
-		//{
-		//	var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-		//	if (string.IsNullOrEmpty(userId))
-		//	{
-		//		return Unauthorized(new { IsSuccess = false, Message = "Invalid Token!" });
-		//	}
-
-		//	if (booking == null || booking.TotalDays <= 0)
-		//	{
-		//		return BadRequest(new { IsSuccess = false, Message = "Invalid booking details!" });
-		//	}
-
-		//	var localHome = await _context.LocalHomes.FindAsync(booking.LocalHomeId);
-		//	if (localHome == null || !localHome.IsAvailable )
-		//	{
-		//		return BadRequest(new { IsSuccess = false, Message = "Local home not available!" });
-		//	}
-
-		//	// Calculate total cost
-		//	decimal totalCost = booking.TotalDays * localHome.PricePerNight;
-
-		//	var pendingBooking = new UserLocalHomeBooking
-		//	{
-		//		UserId = Guid.Parse(userId),
-		//		LocalHomeId = booking.LocalHomeId,
-		//		TotalAmount = totalCost,
-		//		Status = "Pending",
-		//		TotalDays = booking.TotalDays
-		//	};
-
-		//	_context.UserLocalHomesBookings.Add(pendingBooking);
-		//	await _context.SaveChangesAsync();
-
-		//	var paymentResult = await _paymentService.CreatePaymentIntent(pendingBooking.Id, "LocalHome", pendingBooking.TotalAmount);
-		//	var clientSecret = paymentResult?.GetType().GetProperty("clientSecret")?.GetValue(paymentResult)?.ToString();
-
-		//	if (!string.IsNullOrEmpty(clientSecret))
-		//	{
-		//		return Ok(new { IsSuccess = true, BookingId = pendingBooking.Id, ClientSecret = clientSecret });
-		//	}
-		//	else
-		//	{
-		//		return BadRequest(new { IsSuccess = false, Message = "Failed to create payment intent!" });
-		//	}
-		//}
 		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 		[Authorize(Roles = "Tourist")]
 		[HttpPost("booking/initiate")]

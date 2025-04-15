@@ -302,6 +302,8 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles =("Tourist"))]
 		[HttpPost("booking/initiate")]
 		public async Task<IActionResult> InitiateBooking([FromBody] TransportBookingModel model)
 		{
@@ -366,7 +368,8 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = ("Tourist"))]
 		[HttpPost("booking/payment-success")]
 		public async Task<IActionResult> PaymentSuccess([FromBody] PaymentSuccessDto paymentData)
 		{
@@ -568,6 +571,7 @@ namespace IdealTrip.Controllers
 		}
 
 		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles =("Tourist"))]
 		[HttpGet("user-bookings")]
 		public async Task<IActionResult> GetUserBookings()
 		{
@@ -610,34 +614,6 @@ namespace IdealTrip.Controllers
 			}
 
 		}
-
-		//[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-		//[HttpPost("cancel-booking/{id}")]
-		//public async Task<IActionResult> CancelBooking(Guid id)
-		//{
-		//	var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-		//	if (string.IsNullOrEmpty(userId))
-		//	{
-		//		return Unauthorized(new { IsSuccess = false, Message = "Unauthorized action." });
-		//	}
-
-		//	var booking = await _context.UserTransportBookings.FindAsync(id);
-		//	if (booking == null || booking.UserId != Guid.Parse(userId))
-		//	{
-		//		return NotFound(new { IsSuccess = false, Message = "Booking not found or unauthorized." });
-		//	}
-
-		//	if (booking.Status == "Paid")
-		//	{
-		//		return BadRequest(new { IsSuccess = false, Message = "Paid bookings cannot be cancelled." });
-		//	}
-
-		//	booking.Status = "Cancelled";
-		//	_context.UserTransportBookings.Update(booking);
-		//	await _context.SaveChangesAsync();
-
-		//	return Ok(new { IsSuccess = true, Message = "Booking cancelled successfully." });
-		//}
 
 		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 		[Authorize(Roles = "Transporter")]
