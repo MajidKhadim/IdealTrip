@@ -451,22 +451,13 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "HotelOwner,Tourist")]
 		[HttpGet("{hotelId}/rooms")]
 		public async Task<IActionResult> GetHotelRooms(Guid hotelId)
 		{
 			try
 			{
-				var ownerId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-				if (string.IsNullOrEmpty(ownerId))
-				{
-					return Unauthorized(new UserManagerResponse
-					{
-						IsSuccess = false,
-						Messege = "User not authorized.",
-						Errors = new List<string> { "User not authorized" }
-					});
-				}
 
 				if (!ModelState.IsValid)
 				{
