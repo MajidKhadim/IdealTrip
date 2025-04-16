@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdealTrip", "IdealTrip.csproj", "{31432DC5-F2CC-650F-0069-DA14B17DDC5A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{31432DC5-F2CC-650F-0069-DA14B17DDC5A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31432DC5-F2CC-650F-0069-DA14B17DDC5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31432DC5-F2CC-650F-0069-DA14B17DDC5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31432DC5-F2CC-650F-0069-DA14B17DDC5A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6551D201-37E1-4399-80EF-6808AB3665D0}
+	EndGlobalSection
+EndGlobal

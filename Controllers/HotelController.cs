@@ -678,7 +678,7 @@ namespace IdealTrip.Controllers
 				foreach (var hotel in hotels)
 				{
 					var roomsQuery = _context.HotelRooms
-						.Where(r => r.HotelId == hotel.HotelId && r.IsAvailable);
+						.Where(r => r.HotelId == hotel.HotelId && r.IsAvailable && !r.IsDeleted);
 
 					if (roomType.HasValue)
 						roomsQuery = roomsQuery.Where(r => r.RoomType == roomType.Value);
@@ -853,6 +853,7 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
+		[AllowAnonymous]
 		[HttpGet("rooms/{id}")]
 		public async Task<IActionResult> GetRoomById(Guid id)
 		{
