@@ -335,7 +335,7 @@ namespace IdealTrip.Controllers
 					return BadRequest(new { IsSuccess = false, Message = "Invalid booking details or bus not available." });
 				if(transport.DepartureTime < DateTime.Now)
 				{
-					return BadRequest();
+					return BadRequest(new { IsSuccess = false, Message = "The Transport has gone" });
 				}
 				if (transport.SeatsAvailable < model.SeatsBooked)
 					return BadRequest(new { IsSuccess = false, Message = "Not enough seats available." });

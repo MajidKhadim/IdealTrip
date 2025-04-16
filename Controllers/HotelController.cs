@@ -15,8 +15,6 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace IdealTrip.Controllers
 {
-	[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-	[Authorize(Roles = "HotelOwner")]
 	[Route("api/[controller]")]
 	[ApiController]
 	public class HotelController : ControllerBase
@@ -36,6 +34,8 @@ namespace IdealTrip.Controllers
 		}
 
 		// 1. Add Hotel
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "HotelOwner")]
 		[HttpPost]
 		public async Task<IActionResult> AddHotel([FromForm] AddHotelModel model)
 		{
@@ -148,6 +148,8 @@ namespace IdealTrip.Controllers
 		}
 
 		// 2. Update Hotel
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "HotelOwner")]
 		[HttpPost("{hotelId}")]
 		public async Task<IActionResult> UpdateHotel(Guid hotelId, [FromForm] AddHotelModel model)
 		{
@@ -258,6 +260,8 @@ namespace IdealTrip.Controllers
 		}
 
 		// 3. Delete Hotel
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "HotelOwner")]
 		[HttpDelete("{hotelId}")]
 		public async Task<IActionResult> DeleteHotel(Guid hotelId)
 		{
@@ -299,6 +303,8 @@ namespace IdealTrip.Controllers
 		}
 
 		// 4. Get My Hotels
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "HotelOwner")]
 		[HttpGet("my-hotels")]
 		public async Task<IActionResult> GetMyHotels()
 		{
@@ -341,6 +347,8 @@ namespace IdealTrip.Controllers
 		}
 
 		// 5. Add Hotel Room
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "HotelOwner")]
 		[HttpPost("add-room")]
 		public async Task<IActionResult> AddRoom(Guid hotelId, [FromForm] AddHotelRoomModel model)
 		{
@@ -502,6 +510,8 @@ namespace IdealTrip.Controllers
 
 
 		// 7. Update Room
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "HotelOwner")]
 		[HttpPut("room/{roomId}")]
 		public async Task<IActionResult> UpdateRoom(Guid roomId, [FromBody] AddHotelRoomModel updatedRoom)
 		{
@@ -611,6 +621,8 @@ namespace IdealTrip.Controllers
 		}
 
 		// 8. Delete Room
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "HotelOwner")]
 		[HttpDelete("room/{roomId}")]
 		public async Task<IActionResult> DeleteRoom(Guid roomId)
 		{
@@ -732,8 +744,7 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-		[Authorize]
+		[AllowAnonymous]
 		[HttpGet("{id}")]
 		public async Task<IActionResult> GetHotelById(Guid id)
 		{
@@ -930,7 +941,11 @@ namespace IdealTrip.Controllers
 				if (booking.StartDate >= booking.EndDate)
 					return BadRequest(new DataSendingResponse { IsSuccess = false, Message = "Start date must be before End Date." });
 
-				var hotelRoom = await _context.HotelRooms.FindAsync(booking.HotelRoomId);
+				var hotelRoom = await _context.HotelRooms
+	.Include(hr => hr.Hotel)
+	.ThenInclude(h => h.Owner)
+	.FirstOrDefaultAsync(hr => hr.RoomId == Guid.Parse(booking.HotelRoomId));
+
 				if (hotelRoom == null || hotelRoom.IsDeleted || hotelRoom.Hotel.IsDeleted || hotelRoom.Hotel.Owner.IsDeleted)
 					return NotFound(new DataSendingResponse { IsSuccess = false, Message = "Room not available." });
 
