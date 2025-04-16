@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using IdealTrip.Helpers;
 
 namespace IdealTrip.Models.Register
 {
@@ -16,10 +17,10 @@ namespace IdealTrip.Models.Register
 		[MinLength(6)]
 		public string ConfirmPassword {  get; set; }
 
-        [Required]
-        [Phone]
-        public string PhoneNumber { get; set; }
-        [Required]
+		[Required]
+        [PakistaniPhoneNumber]
+		public string PhoneNumber { get; set; }
+		[Required]
         public string Address { get; set; }
         public IFormFile? ProfilePhoto { get; set; }
     }

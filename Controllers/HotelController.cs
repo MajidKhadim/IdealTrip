@@ -141,7 +141,7 @@ namespace IdealTrip.Controllers
 				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Message = "An error occurred while fetching rooms.",
+					Message = "An error occurred while adding hotel.",
 					Errors = new List<string> { ex.Message }
 				});
 			}
@@ -251,7 +251,7 @@ namespace IdealTrip.Controllers
 				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Message = "An error occurred while fetching rooms.",
+					Message = "An error occurred while updating hotel.",
 					Errors = new List<string> { ex.Message }
 				});
 			}
@@ -294,7 +294,7 @@ namespace IdealTrip.Controllers
 			}
 			catch (Exception ex)
 			{
-				return StatusCode(500, new UserManagerResponse { IsSuccess = false, Messege = ex.Message });
+				return StatusCode(500, new UserManagerResponse { IsSuccess = false, Messege = "Internal Server Error" });
 			}
 		}
 
@@ -334,7 +334,7 @@ namespace IdealTrip.Controllers
 				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Message = "An error occurred while fetching rooms.",
+					Message = "Internal Server Error",
 					Errors = new List<string> { ex.Message }
 				});
 			}
@@ -446,7 +446,7 @@ namespace IdealTrip.Controllers
 				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Message = "An error occurred while fetching rooms.",
+					Message = "Internal Server Error",
 					Errors = new List<string> { ex.Message }
 				});
 			}
@@ -504,7 +504,7 @@ namespace IdealTrip.Controllers
 				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Message = "An error occurred while fetching rooms.",
+					Message = "Internal Server Error",
 					Errors = new List<string> { ex.Message }
 				});
 			}
@@ -614,7 +614,7 @@ namespace IdealTrip.Controllers
 				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Message = "An error occurred while fetching rooms.",
+					Message = "Internal Server Error	",
 					Errors = new List<string> { ex.Message }
 				});
 			}
@@ -651,7 +651,7 @@ namespace IdealTrip.Controllers
 				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Message = "An error occurred while fetching rooms.",
+					Message = "Internal Server Error",
 					Errors = new List<string> { ex.Message }
 				});
 			}
@@ -716,7 +716,7 @@ namespace IdealTrip.Controllers
 							Rooms = rooms.Select(r => new
 							{
 								r.RoomId,
-								r.RoomType,
+								RoomType = ((RoomType)r.RoomType).ToString(),
 								r.PricePerNight,
 								r.Capacity,
 								r.NumberOfBeds
@@ -737,7 +737,7 @@ namespace IdealTrip.Controllers
 				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Message = "An error occurred while fetching rooms.",
+					Message = "Internal Server Error",
 					Errors = new List<string> { ex.Message }
 				});
 			}
@@ -788,7 +788,7 @@ namespace IdealTrip.Controllers
 				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Message = "An error occurred while fetching rooms.",
+					Message = "Internal Server Error",
 					Errors = new List<string> { ex.Message }
 				});
 			}
@@ -858,7 +858,7 @@ namespace IdealTrip.Controllers
 				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Message = "An error occurred while fetching rooms.",
+					Message = "Internal Server Error",
 					Errors = new List<string> { ex.Message }
 				});
 			}
@@ -910,7 +910,7 @@ namespace IdealTrip.Controllers
 				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Message = "An error occurred while fetching the room.",
+					Message = "Internal Server Error",
 					Errors = new List<string> { ex.Message }
 				});
 			}
@@ -996,7 +996,7 @@ namespace IdealTrip.Controllers
 				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Message = "An error occurred while fetching the room.",
+					Message = "Internal Server Error",
 					Errors = new List<string> { ex.Message }
 				});
 			}
@@ -1156,7 +1156,7 @@ namespace IdealTrip.Controllers
 				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Message = "An error occurred while fetching rooms.",
+					Message = "Internal Server Error",
 					Errors = new List<string> { ex.Message }
 				});
 			}
@@ -1198,7 +1198,7 @@ namespace IdealTrip.Controllers
 				return StatusCode(500, new DataSendingResponse
 				{
 					IsSuccess = false,
-					Message = "An error occurred while fetching rooms.",
+					Message = "Internal Server Error",
 					Errors = new List<string> { ex.Message }
 				});
 			}

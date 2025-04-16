@@ -22,6 +22,7 @@ DotNetEnv.Env.Load();
 // JWT Configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
+builder.Services.AddSingleton<EmailValidationService>();
 builder.Services.AddSingleton<JwtHelper>();
 builder.Services.AddSingleton<EmailService>();
 builder.Services.AddScoped<IUserService,UserService>();

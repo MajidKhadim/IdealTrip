@@ -87,7 +87,8 @@ namespace IdealTrip.Services
 					return new UserManagerResponse
 					{
 						IsSuccess = false,
-						Messege = "This Email is already associated with another Account"
+						Messege = "This Email is already associated with another Account",
+						Errors = new List<string> { "This Email is already associated with another Account" }
 					};
 				}
 
@@ -96,7 +97,8 @@ namespace IdealTrip.Services
 					return new UserManagerResponse
 					{
 						IsSuccess = false,
-						Messege = "Confirm Password does not match the password"
+						Messege = "Confirm Password does not match the password",
+						Errors = new List<string> { "Confirm Password does not match the password" }
 					};
 				}
 
@@ -155,7 +157,8 @@ namespace IdealTrip.Services
 				return new UserManagerResponse
 				{
 					IsSuccess = false,
-					Messege = ex.Message
+					Messege = ex.Message,
+					Errors = new List<string> { "Something went wrong!! try again later" }
 				};
 			}
 		}
@@ -171,7 +174,8 @@ namespace IdealTrip.Services
 					return new UserManagerResponse
 					{
 						IsSuccess = false,
-						Messege = "This Email is already associated with another Account"
+						Messege = "This Email is already associated with another Account",
+						Errors = new List<string> { "This Email is already associated with another Account" }
 					};
 				}
 
@@ -180,7 +184,8 @@ namespace IdealTrip.Services
 					return new UserManagerResponse
 					{
 						IsSuccess = false,
-						Messege = "Confirm Password does not match the password"
+						Messege = "Confirm Password does not match the password",
+						Errors = new List<string> { "Confirm Password does not match the password" }
 					};
 				}
 
@@ -278,7 +283,8 @@ namespace IdealTrip.Services
 				return new UserManagerResponse
 				{
 					IsSuccess = false,
-					Messege = ex.Message
+					Messege = ex.Message,
+					Errors = new List<string> { "Something went wrong!! try again later" }
 				};
 			}
 		}
@@ -294,7 +300,8 @@ namespace IdealTrip.Services
 					return new UserManagerResponse
 					{
 						IsSuccess = false,
-						Messege = "This Email is already associated with another Account"
+						Messege = "This Email is already associated with another Account",
+						Errors = new List<string> { "This Email is already associated with another Account" }
 					};
 				}
 
@@ -303,7 +310,8 @@ namespace IdealTrip.Services
 					return new UserManagerResponse
 					{
 						IsSuccess = false,
-						Messege = "Confirm Password does not match the password"
+						Messege = "Confirm Password does not match the password",
+						Errors = new List<string> { "Confirm Password does not match the password" }
 					};
 				}
 
@@ -401,7 +409,8 @@ namespace IdealTrip.Services
 				return new UserManagerResponse
 				{
 					IsSuccess = false,
-					Messege = ex.Message
+					Messege = ex.Message,
+					Errors = new List<string> { "Something went wrong!! try again later" }
 				};
 			}
 		}
@@ -521,7 +530,8 @@ namespace IdealTrip.Services
 					return new UserManagerResponse
 					{
 						IsSuccess = false,
-						Messege = "This Email is already associated with another Account"
+						Messege = "This Email is already associated with another Account",
+						Errors = new List<string> { "This Email is already associated with another Account" }
 					};
 				}
 
@@ -531,7 +541,8 @@ namespace IdealTrip.Services
 					return new UserManagerResponse
 					{
 						IsSuccess = false,
-						Messege = "Confirm Password does not match the password"
+						Messege = "Confirm Password does not match the password",
+						Errors = new List<string> { "Confirm Password does not match the password" }
 					};
 				}
 
@@ -626,7 +637,8 @@ namespace IdealTrip.Services
 				return new UserManagerResponse
 				{
 					IsSuccess = false,
-					Messege = ex.Message
+					Messege = ex.Message,
+					Errors = new List<string> { "Something went wrong!! try again later" }
 				};
 			}
 		}
@@ -640,12 +652,22 @@ namespace IdealTrip.Services
 				var existingUser = await _userManager.FindByEmailAsync(model.Email);
 				if (existingUser != null)
 				{
-					return new UserManagerResponse { IsSuccess = false, Messege = "This Email is already associated with another Account" };
+					return new UserManagerResponse
+					{
+						IsSuccess = false,
+						Messege = "This Email is already associated with another Account",
+						Errors = new List<string> { "This Email is already associated with another Account" }
+					};
 				}
 
 				if (model.Password != model.ConfirmPassword)
 				{
-					return new UserManagerResponse { IsSuccess = false, Messege = "Confirm Password does not match the password" };
+					return new UserManagerResponse
+					{
+						IsSuccess = false,
+						Messege = "Confirm Password does not match the password",
+						Errors = new List<string> { "Confirm Password does not match the password" }
+					};
 				}
 
 				var user = new ApplicationUser
@@ -693,7 +715,8 @@ namespace IdealTrip.Services
 				return new UserManagerResponse
 				{
 					IsSuccess = false,
-					Messege = ex.Message
+					Messege = ex.Message,
+					Errors = new List<string> { "Something went wrong!! try again later" }
 				};
 			}
 		}

@@ -20,12 +20,14 @@ namespace IdealTrip.Controllers
 		private readonly IUserService _userService;
 		private readonly IHttpContextAccessor _contextAccessor;
 		private ApplicationDbContext _context;
+		private readonly EmailValidationService _emailValidationService;
 
-		public AuthController(IUserService userService,IHttpContextAccessor contextAccessor,ApplicationDbContext context)
+		public AuthController(IUserService userService,IHttpContextAccessor contextAccessor,ApplicationDbContext context,EmailValidationService emailValidationService)
 		{
 			_userService = userService;
 			_contextAccessor = contextAccessor;
 			_context = context;
+			_emailValidationService = emailValidationService;
 		}
 
 		#region Registration
@@ -37,12 +39,22 @@ namespace IdealTrip.Controllers
 			{
 				if (ModelState.IsValid)
 				{
+					var isRealEmail = await _emailValidationService.IsEmailRealAsync(model.Email);
+					if (!isRealEmail)
+					{
+						return BadRequest(new UserManagerResponse
+						{
+							Messege = "The email address you entered does not appear to exist. Please enter a valid email.",
+							IsSuccess = false,
+							Errors = new List<string>() { "The email address you entered does not appear to exist. Please enter a valid email." }
+						});
+					}
 					var result = await _userService.RegisterTouristAsync(model, "Tourist");
 					if (result.IsSuccess)
 					{
+
 						// Send OTP to user's email
 						var emailSent = await _userService.SendEmailVerificationAsync(model.Email);
-						await Task.Delay(5000); // Wait 5 seconds (you can tweak this)
 
 						// 3. Check if the email bounced
 						var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
@@ -54,7 +66,8 @@ namespace IdealTrip.Controllers
 							return BadRequest(new UserManagerResponse
 							{
 								Messege = $"Email verification failed. Reason: {bounceReason}",
-								IsSuccess = false
+								IsSuccess = false,
+								Errors = new List<string> { $"Email verification failed. Reason: {bounceReason}" }
 							});
 						}
 
@@ -71,12 +84,23 @@ namespace IdealTrip.Controllers
 						return BadRequest(new UserManagerResponse
 						{
 							Messege = "Something went wrong while sending Verification Email. Please try again.",
-							IsSuccess = false
+							IsSuccess = false,
+							Errors = new List<string> { "Verification email sending failed." }
 						});
 					}
 					return BadRequest(result);
 				}
-				return BadRequest(new UserManagerResponse { Messege = "Some properties are not valid", IsSuccess = false });
+				var errors = ModelState.Values
+			.SelectMany(v => v.Errors)
+			.Select(e => e.ErrorMessage)
+			.ToList();
+
+				return BadRequest(new UserManagerResponse
+				{
+					Messege = "Some properties are not valid",
+					IsSuccess = false,
+					Errors = errors
+				});
 			}
 			catch (Exception ex)
 			{
@@ -84,7 +108,8 @@ namespace IdealTrip.Controllers
 				return StatusCode(500, new UserManagerResponse
 				{
 					Messege = "Unable to perform the task now. Please try again later.",
-					IsSuccess = false
+					IsSuccess = false,
+					Errors = new List<string> { "Unable to perform the task now. Please try again later." }
 				});
 			}
 		}
@@ -96,14 +121,21 @@ namespace IdealTrip.Controllers
 			{
 				if (ModelState.IsValid)
 				{
+					var isRealEmail = await _emailValidationService.IsEmailRealAsync(model.Email);
+					if (!isRealEmail)
+					{
+						return BadRequest(new UserManagerResponse
+						{
+							Messege = "The email address you entered does not appear to exist. Please enter a valid email.",
+							IsSuccess = false,
+							Errors = new List<string>() { "The email address you entered does not appear to exist. Please enter a valid email." }
+						});
+					}
 					var result = await _userService.RegisterTranporterAsync(model, "Transporter");
 					if (result.IsSuccess)
 					{
 						// Send OTP to user's email
 						var emailSent = await _userService.SendEmailVerificationAsync(model.Email);
-						await Task.Delay(5000); // Wait 5 seconds (you can tweak this)
-
-						// 3. Check if the email bounced
 						var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
 						if (user?.IsEmailBounced == true)
 						{
@@ -113,7 +145,8 @@ namespace IdealTrip.Controllers
 							return BadRequest(new UserManagerResponse
 							{
 								Messege = $"Email verification failed. Reason: {bounceReason}",
-								IsSuccess = false
+								IsSuccess = false,
+								Errors = new List<string> { $"Email verification failed. Reason: {bounceReason}" }
 							});
 						}
 						if (emailSent)
@@ -129,20 +162,32 @@ namespace IdealTrip.Controllers
 						await _userService.DeleteUser(model.Email);
 						return BadRequest(new UserManagerResponse
 						{
-							Messege = "Something went wrong while sending OTP. Please try again.",
-							IsSuccess = false
+							Messege = "Something went wrong while sending Verification Email. Please try again.",
+							IsSuccess = false,
+							Errors = new List<string> { "Verification email sending failed." }
 						});
 					}
 					return BadRequest(result);
 				}
-				return BadRequest(new UserManagerResponse { Messege = "Some properties are not valid", IsSuccess = false });
+				var errors = ModelState.Values
+			.SelectMany(v => v.Errors)
+			.Select(e => e.ErrorMessage)
+			.ToList();
+
+				return BadRequest(new UserManagerResponse
+				{
+					Messege = "Some properties are not valid",
+					IsSuccess = false,
+					Errors = errors
+				});
 			}
 			catch (Exception ex)
 			{
 				return StatusCode(500, new UserManagerResponse
 				{
 					Messege = "Unable to perform the task now. Please try again later.",
-					IsSuccess = false
+					IsSuccess = false,
+					Errors = new List<string> { "Unable to perform the task now. Please try again later." }
 				});
 			}
 		}
@@ -153,14 +198,21 @@ namespace IdealTrip.Controllers
 			{
 				if (ModelState.IsValid)
 				{
+					var isRealEmail = await _emailValidationService.IsEmailRealAsync(model.Email);
+					if (!isRealEmail)
+					{
+						return BadRequest(new UserManagerResponse
+						{
+							Messege = "The email address you entered does not appear to exist. Please enter a valid email.",
+							IsSuccess = false,
+							Errors = new List<string>() { "The email address you entered does not appear to exist. Please enter a valid email." }
+						});
+					}
 					var result = await _userService.RegisterTourGuideAsync(model, "TourGuide");
 					if (result.IsSuccess)
 					{
 						// Send OTP to user's email
 						var emailSent = await _userService.SendEmailVerificationAsync(model.Email);
-						await Task.Delay(5000); // Wait 5 seconds (you can tweak this)
-
-						// 3. Check if the email bounced
 						var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
 						if (user?.IsEmailBounced == true)
 						{
@@ -170,7 +222,8 @@ namespace IdealTrip.Controllers
 							return BadRequest(new UserManagerResponse
 							{
 								Messege = $"Email verification failed. Reason: {bounceReason}",
-								IsSuccess = false
+								IsSuccess = false,
+								Errors = new List<string> { $"Email verification failed. Reason: {bounceReason}" }
 							});
 						}
 						if (emailSent)
@@ -186,20 +239,32 @@ namespace IdealTrip.Controllers
 						await _userService.DeleteUser(model.Email);
 						return BadRequest(new UserManagerResponse
 						{
-							Messege = "Something went wrong while sending OTP. Please try again.",
-							IsSuccess = false
+							Messege = "Something went wrong while sending Verification Email. Please try again.",
+							IsSuccess = false,
+							Errors = new List<string> { "Verification email sending failed." }
 						});
 					}
 					return BadRequest(result);
 				}
-				return BadRequest(new UserManagerResponse { Messege = "Some properties are not valid", IsSuccess = false });
+				var errors = ModelState.Values
+			.SelectMany(v => v.Errors)
+			.Select(e => e.ErrorMessage)
+			.ToList();
+
+				return BadRequest(new UserManagerResponse
+				{
+					Messege = "Some properties are not valid",
+					IsSuccess = false,
+					Errors = errors
+				});
 			}
 			catch (Exception ex)
 			{
 				return StatusCode(500, new UserManagerResponse
 				{
 					Messege = "Unable to perform the task now. Please try again later.",
-					IsSuccess = false
+					IsSuccess = false,
+					Errors = new List<string> { "Unable to perform the task now. Please try again later." }	
 				});
 			}
 		}
@@ -210,14 +275,21 @@ namespace IdealTrip.Controllers
 			{
 				if (ModelState.IsValid)
 				{
+					var isRealEmail = await _emailValidationService.IsEmailRealAsync(model.Email);
+					if (!isRealEmail)
+					{
+						return BadRequest(new UserManagerResponse
+						{
+							Messege = "The email address you entered does not appear to exist. Please enter a valid email.",
+							IsSuccess = false,
+							Errors = new List<string>() { "The email address you entered does not appear to exist. Please enter a valid email." }
+						});
+					}
 					var result = await _userService.RegisterLocalHomeOwnerAsync(model, "LocalHomeOwner");
 					if (result.IsSuccess)
 					{
 						// Send OTP to user's email
 						var emailSent = await _userService.SendEmailVerificationAsync(model.Email);
-						await Task.Delay(5000); // Wait 5 seconds (you can tweak this)
-
-						// 3. Check if the email bounced
 						var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
 						if (user?.IsEmailBounced == true)
 						{
@@ -227,7 +299,8 @@ namespace IdealTrip.Controllers
 							return BadRequest(new UserManagerResponse
 							{
 								Messege = $"Email verification failed. Reason: {bounceReason}",
-								IsSuccess = false
+								IsSuccess = false,
+								Errors = new List<string> { $"Email verification failed. Reason: {bounceReason}" }
 							});
 						}
 						if (emailSent)
@@ -243,20 +316,32 @@ namespace IdealTrip.Controllers
 						await _userService.DeleteUser(model.Email);
 						return BadRequest(new UserManagerResponse
 						{
-							Messege = "Something went wrong while sending OTP. Please try again.",
-							IsSuccess = false
+							Messege = "Something went wrong while sending Verification Email. Please try again.",
+							IsSuccess = false,
+							Errors = new List<string> { "Verification email sending failed." }
 						});
 					}
 					return BadRequest(result);
 				}
-				return BadRequest(new UserManagerResponse { Messege = "Some properties are not valid", IsSuccess = false });
+				var errors = ModelState.Values
+			.SelectMany(v => v.Errors)
+			.Select(e => e.ErrorMessage)
+			.ToList();
+
+				return BadRequest(new UserManagerResponse
+				{
+					Messege = "Some properties are not valid",
+					IsSuccess = false,
+					Errors = errors
+				});
 			}
 			catch (Exception ex)
 			{
 				return StatusCode(500, new UserManagerResponse
 				{
 					Messege = "Unable to perform the task now. Please try again later.",
-					IsSuccess = false
+					IsSuccess = false,
+					Errors = new List<string> { "Unable to perform the task now. Please try again later." }
 				});
 			}
 		}
@@ -268,14 +353,22 @@ namespace IdealTrip.Controllers
 			{
 				if (ModelState.IsValid)
 				{
+					var isRealEmail = await _emailValidationService.IsEmailRealAsync(model.Email);
+					if (!isRealEmail)
+					{
+						return BadRequest(new UserManagerResponse
+						{
+							Messege = "The email address you entered does not appear to exist. Please enter a valid email.",
+							IsSuccess = false,
+							Errors = new List<string>() { "The email address you entered does not appear to exist. Please enter a valid email." }
+						});
+					}
 					var result = await _userService.RegisterHotelOwnerAsync(model, "HotelOwner");
 					if (result.IsSuccess)
 					{
 						// Send OTP to user's email
 						var emailSent = await _userService.SendEmailVerificationAsync(model.Email);
-						await Task.Delay(5000); // Wait 5 seconds (you can tweak this)
 
-						// 3. Check if the email bounced
 						var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
 						if (user?.IsEmailBounced == true)
 						{
@@ -285,7 +378,8 @@ namespace IdealTrip.Controllers
 							return BadRequest(new UserManagerResponse
 							{
 								Messege = $"Email verification failed. Reason: {bounceReason}",
-								IsSuccess = false
+								IsSuccess = false,
+								Errors = new List<string> { $"Email verification failed. Reason: {bounceReason}" }
 							});
 						}
 						if (emailSent)
@@ -301,20 +395,32 @@ namespace IdealTrip.Controllers
 						await _userService.DeleteUser(model.Email);
 						return BadRequest(new UserManagerResponse
 						{
-							Messege = "Something went wrong while sending OTP. Please try again.",
-							IsSuccess = false
+							Messege = "Something went wrong while sending Verification Email. Please try again.",
+							IsSuccess = false,
+							Errors = new List<string> { "Verification email sending failed." }
 						});
 					}
 					return BadRequest(result);
 				}
-				return BadRequest(new UserManagerResponse { Messege = "Some properties are not valid", IsSuccess = false });
+				var errors = ModelState.Values
+			.SelectMany(v => v.Errors)
+			.Select(e => e.ErrorMessage)
+			.ToList();
+
+				return BadRequest(new UserManagerResponse
+				{
+					Messege = "Some properties are not valid",
+					IsSuccess = false,
+					Errors = errors
+				});
 			}
 			catch (Exception ex)
 			{
 				return StatusCode(500, new UserManagerResponse
 				{
 					Messege = "Unable to perform the task now. Please try again later.",
-					IsSuccess = false
+					IsSuccess = false,
+					Errors = new List<string> { "Unable to perform the task now. Please try again later." }
 				});
 			}
 		}
@@ -354,7 +460,8 @@ namespace IdealTrip.Controllers
 				return StatusCode(500, new UserManagerResponse
 				{
 					Messege = "Unable to perform the task now. Please try again later.",
-					IsSuccess = false
+					IsSuccess = false,
+					Errors = new List<string> { "Unable to perform the task now. Please try again later." }
 				});
 			}
 		}
