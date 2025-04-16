@@ -451,8 +451,7 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-		[Authorize(Roles = "HotelOwner,Tourist")]
+		[AllowAnonymous]
 		[HttpGet("{hotelId}/rooms")]
 		public async Task<IActionResult> GetHotelRooms(Guid hotelId)
 		{
@@ -470,7 +469,7 @@ namespace IdealTrip.Controllers
 				}
 
 				// Check if the hotel exists and belongs to the logged-in owner
-				var hotelExists = await _context.Hotels.AnyAsync(h => h.HotelId == hotelId && h.OwnerId == Guid.Parse(ownerId) && !h.IsDeleted);
+				var hotelExists = await _context.Hotels.AnyAsync(h => h.HotelId == hotelId && !h.IsDeleted);
 				if (!hotelExists)
 					return NotFound(new UserManagerResponse { IsSuccess = false, Messege = "Hotel not found or unauthorized!" });
 
