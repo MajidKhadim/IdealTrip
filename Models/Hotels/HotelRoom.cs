@@ -18,7 +18,7 @@ namespace IdealTrip.Models.Hotels
         [Range(1, int.MaxValue, ErrorMessage = "NumberOfBeds Can't be 0 or less than 0")]
         [Required]
         public int NumberOfBeds { get; set; }
-        public bool IsAvailable { get; set; }
+        public bool IsAvailable { get; set; } = true;
 
         [ForeignKey("Hotel")]
         public Guid HotelId { get; set; }
