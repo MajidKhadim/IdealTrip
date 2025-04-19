@@ -347,6 +347,7 @@ namespace IdealTrip.Controllers
 				booking.Status = BookingStatus.Pending.ToString();
 				booking.BookingDate = DateTime.Now;
 				booking.CreatedAt = DateTime.Now;
+				booking.SeatsBooked = model.SeatsBooked;
 				booking.UserId = Guid.Parse(userId);
 
 				_context.UserTransportBookings.Add(booking);
