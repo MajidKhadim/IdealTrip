@@ -701,7 +701,7 @@ namespace IdealTrip.Controllers
 
 		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 		[Authorize(Roles = "Tourist")]
-		[HttpGet("hotel/get-feedback/{hotelId}")]
+		[HttpGet("get-feedback/{tranportId}")]
 		public async Task<IActionResult> GetHotelFeedbacks(Guid hotelId)
 		{
 			try
