@@ -329,7 +329,11 @@ namespace IdealTrip.Controllers
 						h.HotelDescription,
 						h.Address,
 						h.IsAvailable,
-						h.CreatedAt
+						h.CreatedAt,
+						PrimaryImage = _context.ServiceImages
+							.Where(si => si.ServiceId == h.HotelId && si.ServiceType == Service.Hotel.ToString() && si.IsPrimary)
+							.Select(si => si.ImageUrl)
+							.FirstOrDefault()
 					})
 					.ToListAsync();
 
@@ -491,7 +495,11 @@ namespace IdealTrip.Controllers
 						r.Capacity,
 						r.NumberOfBeds,
 						r.PricePerNight,
-						r.IsAvailable
+						r.IsAvailable,
+						PrimaryImage = _context.ServiceImages
+							.Where(si => si.ServiceId == r.RoomId && si.ServiceType == Service.HotelRoom.ToString() && si.IsPrimary)
+							.Select(si => si.ImageUrl)
+							.FirstOrDefault()
 					})
 					.ToListAsync();
 
@@ -715,13 +723,21 @@ namespace IdealTrip.Controllers
 							hotel.Address,
 							hotel.IsAvailable,
 							hotel.Rating,
+							PrimaryImage = _context.ServiceImages
+							.Where(si => si.ServiceId == hotel.HotelId && si.ServiceType == Service.Hotel.ToString() && si.IsPrimary)
+							.Select(si => si.ImageUrl)
+							.FirstOrDefault(),
 							Rooms = rooms.Select(r => new
 							{
 								r.RoomId,
 								RoomType = ((RoomType)r.RoomType).ToString(),
 								r.PricePerNight,
 								r.Capacity,
-								r.NumberOfBeds
+								r.NumberOfBeds,
+								PrimaryImage = _context.ServiceImages
+							.Where(si => si.ServiceId == r.RoomId && si.ServiceType == Service.HotelRoom.ToString() && si.IsPrimary)
+							.Select(si => si.ImageUrl)
+							.FirstOrDefault()
 							})
 						});
 					}
@@ -772,13 +788,25 @@ namespace IdealTrip.Controllers
 						hotel.Address,
 						hotel.IsAvailable,
 						hotel.Rating,
+						PrimaryImage = _context.ServiceImages
+							.Where(si => si.ServiceId == hotel.HotelId && si.ServiceType == Service.Hotel.ToString() && si.IsPrimary)
+							.Select(si => si.ImageUrl)
+							.FirstOrDefault(),
+						Images = _context.ServiceImages
+							.Where(img => img.ServiceId == hotel.HotelId && img.ServiceType == Service.Hotel.ToString() && img.IsPrimary != true)
+							.Select(img => img.ImageUrl)
+							.ToList(),
 						Rooms = rooms.Select(r => new
 						{
 							r.RoomId,
 							r.RoomType,
 							r.PricePerNight,
 							r.Capacity,
-							r.NumberOfBeds
+							r.NumberOfBeds,
+							PrimaryImage = _context.ServiceImages
+							.Where(si => si.ServiceId == r.RoomId && si.ServiceType == Service.HotelRoom.ToString() && si.IsPrimary)
+							.Select(si => si.ImageUrl)
+							.FirstOrDefault(),
 						})
 					},
 					Message = "Hotel details fetched"
@@ -838,12 +866,20 @@ namespace IdealTrip.Controllers
 					r.PricePerNight,
 					r.Capacity,
 					r.NumberOfBeds,
+					PrimaryImage = _context.ServiceImages
+							.Where(si => si.ServiceId == r.RoomId && si.ServiceType == Service.HotelRoom.ToString() && si.IsPrimary)
+							.Select(si => si.ImageUrl)
+							.FirstOrDefault(),
 					Hotel = new
 					{
 						r.Hotel.HotelId,
 						r.Hotel.HotelName,
 						r.Hotel.Address,
-						r.Hotel.Rating
+						r.Hotel.Rating,
+						PrimaryImage = _context.ServiceImages
+							.Where(si => si.ServiceId == r.Hotel.HotelId && si.ServiceType == Service.Hotel.ToString() && si.IsPrimary)
+							.Select(si => si.ImageUrl)
+							.FirstOrDefault(),
 					}
 				});
 
@@ -890,13 +926,25 @@ namespace IdealTrip.Controllers
 					room.PricePerNight,
 					room.Capacity,
 					room.NumberOfBeds,
+					PrimaryImage = _context.ServiceImages
+							.Where(si => si.ServiceId == room.RoomId && si.ServiceType == Service.HotelRoom.ToString() && si.IsPrimary)
+							.Select(si => si.ImageUrl)
+							.FirstOrDefault(),
+					Images = _context.ServiceImages
+							.Where(img => img.ServiceId == room.RoomId && img.ServiceType == Service.HotelRoom.ToString() && img.IsPrimary != true)
+							.Select(img => img.ImageUrl)
+							.ToList(),
 					Hotel = new
 					{
 						room.Hotel.HotelId,
 						room.Hotel.HotelName,
 						room.Hotel.HotelDescription,
 						room.Hotel.Address,
-						room.Hotel.Rating
+						room.Hotel.Rating,
+						PrimaryImage = _context.ServiceImages
+							.Where(si => si.ServiceId == room.Hotel.HotelId && si.ServiceType == Service.Hotel.ToString() && si.IsPrimary)
+							.Select(si => si.ImageUrl)
+							.FirstOrDefault(),
 					}
 				};
 

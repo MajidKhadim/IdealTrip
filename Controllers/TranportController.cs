@@ -74,7 +74,8 @@ namespace IdealTrip.Controllers
 					TicketPrice = model.PricePerSeat,
 					CreatedAt = DateTime.Now,
 					IsAvailable = true,
-					IsDeleted = false
+					IsDeleted = false,
+					UpdatedAt = DateTime.Now
 				};
 
 				_context.Transports.Add(transport);
@@ -161,6 +162,157 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "Transporter")]
+		[HttpPut("update-transport/{transportId}")]
+		public async Task<IActionResult> UpdateTransport(string transportId,[FromForm] AddTransportModel model)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(new UserManagerResponse
+				{
+					IsSuccess = false,
+					Messege = "Invalid Data",
+					Errors = ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage)).ToList()
+				});
+			}
+
+			var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized(new DataSendingResponse { IsSuccess = false, Message = "Unauthorized action." });
+			}
+
+			var transport = await _context.Transports.FindAsync(Guid.Parse(transportId));
+			if (transport == null || transport.IsDeleted)
+			{
+				return NotFound(new DataSendingResponse { IsSuccess = false, Message = "Transport not found." });
+			}
+
+			if (transport.OwnerId.ToString() != userId)
+			{
+				return Forbid();
+			}
+
+			if (model.DepartureTime <= DateTime.Now)
+			{
+				return BadRequest(new DataSendingResponse { IsSuccess = false, Message = "Please provide a valid future departure time." });
+			}
+
+			try
+			{
+				// Update basic transport fields
+				transport.Name = model.Name;
+				transport.Type = model.Type;
+				transport.Capacity = model.Capacity;
+				transport.SeatsAvailable = model.Capacity;
+				transport.StartLocation = model.StartLocation;
+				transport.Destination = model.Destination;
+				transport.DepartureTime = model.DepartureTime;
+				transport.TicketPrice = model.PricePerSeat;
+				transport.UpdatedAt = DateTime.Now;
+
+				string transportFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/TransportImages", transportId.ToString());
+				if (!Directory.Exists(transportFolderPath))
+					Directory.CreateDirectory(transportFolderPath);
+
+				var imageUrls = new List<string>();
+
+				// === Delete old primary image if new one is uploaded ===
+				if (model.PrimaryImage != null)
+				{
+					var oldPrimary = await _context.ServiceImages
+						.FirstOrDefaultAsync(i => i.ServiceId.ToString() == transportId && i.ServiceType == Service.Transport.ToString() && i.IsPrimary);
+
+					if (oldPrimary != null)
+					{
+						string oldPrimaryPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", oldPrimary.ImageUrl.TrimStart('/'));
+						if (System.IO.File.Exists(oldPrimaryPath))
+							System.IO.File.Delete(oldPrimaryPath);
+
+						_context.ServiceImages.Remove(oldPrimary);
+					}
+
+					var primaryFileName = $"primary_{Guid.NewGuid()}_{Path.GetFileName(model.PrimaryImage.FileName)}";
+					var primaryFilePath = Path.Combine(transportFolderPath, primaryFileName);
+					using (var stream = new FileStream(primaryFilePath, FileMode.Create))
+						await model.PrimaryImage.CopyToAsync(stream);
+
+					var primaryImageUrl = $"/TransportImages/{transportId}/{primaryFileName}";
+					imageUrls.Add(primaryImageUrl);
+
+					_context.ServiceImages.Add(new ServiceImage
+					{
+						ServiceId = Guid.Parse(transportId),
+						ServiceType = Service.Transport.ToString(),
+						ImageUrl = primaryImageUrl,
+						IsPrimary = true
+					});
+				}
+
+				// === Delete all old non-primary images if new ones are uploaded ===
+				if (model.Images != null && model.Images.Count > 0)
+				{
+					var oldNonPrimaryImages = await _context.ServiceImages
+						.Where(i => i.ServiceId.ToString() == transportId && i.ServiceType == Service.Transport.ToString() && !i.IsPrimary)
+						.ToListAsync();
+
+					foreach (var img in oldNonPrimaryImages)
+					{
+						string imgPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", img.ImageUrl.TrimStart('/'));
+						if (System.IO.File.Exists(imgPath))
+							System.IO.File.Delete(imgPath);
+
+						_context.ServiceImages.Remove(img);
+					}
+
+					// Add new images
+					foreach (var image in model.Images)
+					{
+						var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(image.FileName)}";
+						var filePath = Path.Combine(transportFolderPath, fileName);
+
+						using (var stream = new FileStream(filePath, FileMode.Create))
+							await image.CopyToAsync(stream);
+
+						var imageUrl = $"/TransportImages/{transportId}/{fileName}";
+						imageUrls.Add(imageUrl);
+
+						_context.ServiceImages.Add(new ServiceImage
+						{
+							ServiceId = Guid.Parse(transportId),
+							ServiceType = Service.Transport.ToString(),
+							ImageUrl = imageUrl,
+							IsPrimary = false
+						});
+					}
+				}
+
+				await _context.SaveChangesAsync();
+
+				return Ok(new DataSendingResponse
+				{
+					IsSuccess = true,
+					Message = "Transport updated successfully.",
+					Data = new
+					{
+						transport,
+						PrimaryImage = imageUrls.FirstOrDefault(),
+						Images = imageUrls.Skip(1).ToList()
+					}
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new DataSendingResponse
+				{
+					IsSuccess = false,
+					Message = "Internal Server Error",
+					Errors = new List<string> { ex.Message }
+				});
+			}
+		}
+
 
 		[HttpGet("get-all-transports")]
 		[AllowAnonymous]
@@ -194,6 +346,48 @@ namespace IdealTrip.Controllers
 					IsSuccess = true,
 					Data = transports,
 					Message = "All transports retrieved successfully."
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new DataSendingResponse
+				{
+					IsSuccess = false,
+					Message = "Internal Server Error",
+					Errors = new List<string> { ex.Message }
+				});
+			}
+		}
+		[Authorize(AuthenticationSchemes =JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles =("Transporter"))]
+		[HttpGet("my-tranports")]
+
+		public async Task<IActionResult> GetMyTransports()
+		{
+			try
+			{
+				var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+				if (string.IsNullOrEmpty(userId))
+				{
+					return Unauthorized(new DataSendingResponse { IsSuccess = false, Message = "Unauthorized action." });
+				}
+				var tranports = await _context.Transports.Where(t => t.OwnerId.ToString() == userId)
+					.Select(t => new
+					{
+						t.Id,
+						t.Name,
+						t.Type,
+						t.StartLocation,
+						t.Destination,
+						t.DepartureTime,
+						t.TicketPrice,
+					}
+					).ToListAsync();
+				return Ok(new UserManagerResponse
+				{
+					IsSuccess = true,
+					Messege = "Tranports Retrived successfully",
+					Data = tranports
 				});
 			}
 			catch (Exception ex)

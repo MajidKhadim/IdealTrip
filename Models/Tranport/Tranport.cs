@@ -18,6 +18,7 @@ namespace IdealTrip.Models.Tranport_Booking
 		public bool IsAvailable { get; set; }
 		public DateTime CreatedAt { get; set; }
 		public float Rating {  get; set; }
+		public DateTime UpdatedAt { get; set; }
 
 		[ForeignKey("OwnerId")]
 
