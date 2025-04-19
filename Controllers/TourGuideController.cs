@@ -93,7 +93,8 @@ namespace IdealTrip.Controllers
 						tg.Experience,
 						tg.Bio,
 						tg.Location,
-						tg.Rating
+						tg.Rating,
+						tg.User.ProfilePhotoPath,
 					})
 					.ToListAsync();
 
@@ -115,8 +116,7 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-		[Authorize]
+		[AllowAnonymous]
 		[HttpGet("{id}")]
 		public async Task<IActionResult> GetTourGuideDetails(Guid id)
 		{
@@ -133,7 +133,8 @@ namespace IdealTrip.Controllers
 					tg.Experience,
 					tg.Bio,
 					tg.Location,
-					tg.Rating
+					tg.Rating,
+					tg.User.ProfilePhotoPath,
 				}).FirstOrDefaultAsync();
 				if (tourGuide == null)
 				{
@@ -161,53 +162,6 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-		//[HttpPost("booking/initiate")]
-		//public async Task<IActionResult> InitiateBooking([FromBody] TourGuideBookingModel booking)
-		//{
-		//	var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-		//	if (string.IsNullOrEmpty(userId))
-		//	{
-		//		return Unauthorized(new { IsSuccess = false, Message = "Invalid Token!" });
-		//	}
-
-		//	if (booking == null || booking.TotalDays <= 0)
-		//	{
-		//		return BadRequest(new { IsSuccess = false, Message = "Invalid booking details!" });
-		//	}
-
-		//	var tourGuide = await _context.TourGuides.FindAsync(booking.TourGuideId);
-		//	if (tourGuide == null || !tourGuide.IsAvailable)
-		//	{
-		//		return BadRequest(new { IsSuccess = false, Message = "Tour guide not available!" });
-		//	}
-
-		//	// Calculate total cost
-		//	decimal totalCost = booking.TotalDays * tourGuide.RatePerDay;
-
-		//	var pendingBooking = new UserTourGuideBooking
-		//	{
-		//		UserId = Guid.Parse(userId),
-		//		TourGuideId = booking.TourGuideId,
-		//		TotalAmount = totalCost,
-		//		Status = BookingStatus.Pending.ToString(),
-		//		TotalDays = booking.TotalDays
-		//	};
-
-		//	_context.UserTourGuideBookings.Add(pendingBooking);
-		//	await _context.SaveChangesAsync();
-
-		//	var paymentResult = await _paymentService.CreatePaymentIntent(pendingBooking.Id, "TourGuide", pendingBooking.TotalAmount);
-		//	var clientSecret = paymentResult?.GetType().GetProperty("clientSecret")?.GetValue(paymentResult)?.ToString();
-
-		//	if (!string.IsNullOrEmpty(clientSecret))
-		//	{
-		//		return Ok(new { IsSuccess = true, BookingId = pendingBooking.Id, ClientSecret = clientSecret });
-		//	}
-		//	else
-		//	{
-		//		return BadRequest(new { IsSuccess = false, Message = "Failed to create payment intent!" });
-		//	}
-		//}
 		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 		[Authorize(Roles = "Tourist")]
 		[HttpPost("booking/initiate")]
@@ -306,45 +260,7 @@ namespace IdealTrip.Controllers
 			}
 
 
-		//[HttpPost("booking/payment-success")]
-		//public async Task<IActionResult> PaymentSuccess([FromBody] PaymentSuccessDto paymentData)
-		//{
-		//	if (paymentData == null || string.IsNullOrEmpty(paymentData.BookingId) || string.IsNullOrEmpty(paymentData.PaymentIntentId))
-		//	{
-		//		return BadRequest(new { IsSuccess = false, Message = "Invalid request data." });
-		//	}
-
-		//	var bookingId = Guid.Parse(paymentData.BookingId);
-		//	var booking = await _context.UserTourGuideBookings
-		//		.Include(b => b.User)      // Ensure User data is loaded
-		//		.Include(b => b.TourGuide) // Ensure TourGuide data is loaded
-		//		.FirstOrDefaultAsync(b => b.Id == bookingId);
-
-
-		//	if (booking == null)
-		//	{
-		//		return NotFound(new { IsSuccess = false, Message = "Booking not found." });
-		//	}
-
-		//	using var transaction = await _context.Database.BeginTransactionAsync();
-		//	try
-		//	{
-		//		booking.Status = "Paid";
-		//		booking.PaymentIntentId = paymentData.PaymentIntentId;
-		//		_context.UserTourGuideBookings.Update(booking);
-		//		await _context.SaveChangesAsync();
-		//		string content = EmailTemplates.PaymentSuccessTemplate(booking.User.FullName, booking.TotalAmount.ToString(), booking.BookingDate.ToString(), booking.TourGuide.FullName, booking.TourGuide.Bio, booking.Status, booking.PaymentIntentId);
-		//		await _emailService.SendEmailAsync(booking.User.Email, "Booking Successful", content);
-
-		//		await transaction.CommitAsync();
-		//		return Ok(new { IsSuccess = true, Message = "Payment updated successfully. Confirmation email sent." });
-		//	}
-		//	catch
-		//	{
-		//		await transaction.RollbackAsync();
-		//		return BadRequest(new { IsSuccess = false, Message = "Payment processing failed." });
-		//	}
-		//}
+		
 		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 		[Authorize(Roles = "Tourist")]
 		[HttpPost("booking/payment-success")]

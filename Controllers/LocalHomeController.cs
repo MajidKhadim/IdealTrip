@@ -439,8 +439,7 @@ namespace IdealTrip.Controllers
 			}
 		}
 
-		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-		[Authorize]
+		[AllowAnonymous]
 		[HttpGet("GetLocalHomeById/{id}")]
 		public async Task<IActionResult> GetLocalHomeById(Guid id)
 		{
@@ -866,7 +865,8 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[Authorize(Roles = "LocalHomeOwner")]
 		[HttpGet("/my-homes")]
 		public async Task<IActionResult> GetLocalHomesOfLocalHomeOwner()
 		{

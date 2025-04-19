@@ -206,8 +206,7 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-		[Authorize(Roles = ("Tourist"))]
+		[AllowAnonymous]
 		[HttpGet("get-transport/{id}")]
 		public async Task<IActionResult> GetTransportById(Guid id)
 		{
@@ -253,7 +252,7 @@ namespace IdealTrip.Controllers
 			}
 		}
 
-
+		[AllowAnonymous]
 		[HttpGet("search-transports")]
 		public async Task<IActionResult> SearchTransports([FromQuery] string? startLocation, [FromQuery] string? destination, [FromQuery] DateTime? departureDate)
 		{
@@ -510,38 +509,7 @@ namespace IdealTrip.Controllers
 		}
 
 
-		//[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-		//[Authorize(Roles = "Transporter")]
-		//[HttpPut("update-transport/{id}")]
-		//public async Task<IActionResult> UpdateTransport(Guid id, [FromBody] UpdateTransportModel model)
-		//{
-		//	var userId = _contextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-		//	if (string.IsNullOrEmpty(userId))
-		//	{
-		//		return Unauthorized(new { IsSuccess = false, Message = "Unauthorized action." });
-		//	}
-
-		//	var transport = await _context.Transports.FindAsync(id);
-		//	if (transport == null || transport.OwnerId != Guid.Parse(userId))
-		//	{
-		//		return NotFound(new { IsSuccess = false, Message = "Transport not found or unauthorized." });
-		//	}
-
-		//	transport.Name = model.Name ?? transport.Name;
-		//	transport.Type = model.Type ?? transport.Type;
-		//	transport.Capacity = model.Capacity ?? transport.Capacity;
-		//	transport.SeatsAvailable = model.SeatsAvailable ?? transport.SeatsAvailable;
-		//	transport.StartLocation = model.StartLocation ?? transport.StartLocation;
-		//	transport.Destination = model.Destination ?? transport.Destination;
-		//	transport.DepartureTime = model.DepartureTime ?? transport.DepartureTime;
-		//	transport.TicketPrice = model.TicketPrice ?? transport.TicketPrice;
-		//	transport.IsAvailable = model.IsAvailable ?? transport.IsAvailable;
-
-		//	_context.Transports.Update(transport);
-		//	await _context.SaveChangesAsync();
-
-		//	return Ok(new { IsSuccess = true, Message = "Transport updated successfully." });
-		//}
+		
 
 		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 		[Authorize(Roles = "Transporter")]
