@@ -1215,10 +1215,7 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-
-
-		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-		[Authorize(Roles = "Tourist")]
+		[AllowAnonymous]
 		[HttpGet("hotel/get-feedback/{hotelId}")]
 		public async Task<IActionResult> GetHotelFeedbacks(Guid hotelId)
 		{

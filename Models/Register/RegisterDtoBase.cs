@@ -11,9 +11,11 @@ namespace IdealTrip.Models.Register
         [EmailAddress]
         public string Email { get; set; }
         [Required]
+        [StrongPassword]
         [MinLength(6)]
         public string Password { get; set; }
 		[Required]
+		[Compare("Password", ErrorMessage = "Passwords do not match.")]
 		[MinLength(6)]
 		public string ConfirmPassword {  get; set; }
 

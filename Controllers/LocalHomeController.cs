@@ -824,8 +824,6 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-		[Authorize(Roles = "Tourist")]
 
 		[HttpGet("get-feedback/{localHomeId}")]
 		public async Task<IActionResult> GetFeedback(Guid localHomeId)

@@ -313,14 +313,15 @@ namespace IdealTrip.Controllers
 			}
 		}
 
-
-		[HttpGet("get-all-transports")]
 		[AllowAnonymous]
+		[HttpGet("get-all-transports")]
+		
 		public async Task<IActionResult> GetAllTransports()
 		{
 			try
 			{
 				var transports = await _context.Transports
+					.Where(t => t.DepartureTime > DateTime.Now && !t.IsDeleted)
 					.Select(t => new
 					{
 						t.Id,
@@ -338,7 +339,7 @@ namespace IdealTrip.Controllers
 							.Where(si => si.ServiceId == t.Id && si.ServiceType == Service.Transport.ToString() && si.IsPrimary)
 							.Select(si => si.ImageUrl)
 							.FirstOrDefault()
-					}).Where(t => t.DepartureTime > DateTime.Now)
+					}).Where(t => t.DepartureTime > DateTime.Now )
 					.ToListAsync();
 
 				return Ok(new
@@ -371,7 +372,7 @@ namespace IdealTrip.Controllers
 				{
 					return Unauthorized(new DataSendingResponse { IsSuccess = false, Message = "Unauthorized action." });
 				}
-				var tranports = await _context.Transports.Where(t => t.OwnerId.ToString() == userId)
+				var tranports = await _context.Transports.Where(t => t.OwnerId.ToString() == userId && !t.IsDeleted)
 					.Select(t => new
 					{
 						t.Id,
@@ -455,13 +456,14 @@ namespace IdealTrip.Controllers
 				var query = _context.Transports.AsQueryable();
 
 				if (!string.IsNullOrEmpty(startLocation))
-					query = query.Where(t => t.StartLocation.Contains(startLocation));
+					query = query.Where(t => t.StartLocation.Contains(startLocation) && !t.IsDeleted);
 
 				if (!string.IsNullOrEmpty(destination))
 					query = query.Where(t => t.Destination.Contains(destination));
 
 				if (departureDate.HasValue)
 					query = query.Where(t => t.DepartureTime.Date == departureDate.Value.Date);
+
 
 				var results = await query
 					.Select(t => new
@@ -893,15 +895,13 @@ namespace IdealTrip.Controllers
 		}
 
 
-		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-		[Authorize(Roles = "Tourist")]
 		[HttpGet("get-feedback/{tranportId}")]
-		public async Task<IActionResult> GetHotelFeedbacks(Guid hotelId)
+		public async Task<IActionResult> GetHotelFeedbacks(Guid transportId)
 		{
 			try
 			{
 				var feedbacks = await _context.FeedBacks
-					.Where(f => f.ServiceId == hotelId && f.ServiceType == Service.Transport.ToString())
+					.Where(f => f.ServiceId == transportId && f.ServiceType == Service.Transport.ToString())
 					.OrderByDescending(f => f.Date)
 					.Select(f => new
 					{

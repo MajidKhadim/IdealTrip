@@ -526,8 +526,6 @@ namespace IdealTrip.Controllers
 		}
 
 		// GET: Get Feedback for Tour Guide
-		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-		[Authorize(Roles = "Tourist")]
 		[HttpGet("get-feedback/{tourGuideId}")]
 		public async Task<IActionResult> GetFeedback(Guid tourGuideId)
 		{
