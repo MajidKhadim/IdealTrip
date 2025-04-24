@@ -39,16 +39,16 @@ namespace IdealTrip.Controllers
 			{
 				if (ModelState.IsValid)
 				{
-					var isRealEmail = await _emailValidationService.IsEmailRealAsync(model.Email);
-					if (!isRealEmail)
-					{
-						return BadRequest(new UserManagerResponse
-						{
-							Messege = "The email address you entered does not appear to exist. Please enter a valid email.",
-							IsSuccess = false,
-							Errors = new List<string>() { "The email address you entered does not appear to exist. Please enter a valid email." }
-						});
-					}
+					//var isRealEmail = await _emailValidationService.IsEmailRealAsync(model.Email);
+					//if (!isRealEmail)
+					//{
+					//	return BadRequest(new UserManagerResponse
+					//	{
+					//		Messege = "The email address you entered does not appear to exist. Please enter a valid email.",
+					//		IsSuccess = false,
+					//		Errors = new List<string>() { "The email address you entered does not appear to exist. Please enter a valid email." }
+					//	});
+					//}
 					var result = await _userService.RegisterTouristAsync(model, "Tourist");
 					if (result.IsSuccess)
 					{

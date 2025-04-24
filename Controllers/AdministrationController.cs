@@ -226,7 +226,7 @@ namespace IdealTrip.Controllers
 			string timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
 			user.Email = $"deleted_{timestamp}_{user.Email}";
 			user.NormalizedEmail = user.Email.ToUpper();
-			user.UserName = user.Email;
+			user.UserName = $"deleted_{timestamp}_{user.UserName}";
 			user.NormalizedUserName = user.Email.ToUpper();
 			user.IsDeleted = true;
 
