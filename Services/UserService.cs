@@ -54,6 +54,7 @@ namespace IdealTrip.Services
 		private readonly BlobServiceClient _blobServiceClient;
 		private readonly string _profilePhotoContainerName = "profilepictures";
 		private readonly string _proofContainerName = "proofs";
+		private readonly IHttpContextAccessor _httpContextAccessor;
 
 		public UserService(
 			UserManager<ApplicationUser> userManager,
@@ -62,7 +63,8 @@ namespace IdealTrip.Services
 			IConfiguration config,
 			ILogger<UserService> logger,
 			JwtHelper jwtHelper,
-			BlobServiceClient blobServiceClient)
+			BlobServiceClient blobServiceClient,
+			IHttpContextAccessor httpContextAccessor)
 		{
 			_userManager = userManager;
 			_context = context;
@@ -71,6 +73,7 @@ namespace IdealTrip.Services
 			_logger = logger;
 			_JwtHelper = jwtHelper;
 			_blobServiceClient = blobServiceClient;
+			_httpContextAccessor = httpContextAccessor;
 		}
 
 		#region Registration
@@ -865,11 +868,11 @@ namespace IdealTrip.Services
 				};
 			}
 		}
-			#endregion
+		#endregion
 
-			#region Login
+		#region Login
 
-			public async Task<UserManagerResponse> LoginUserAsync(LoginModel model)
+		public async Task<UserManagerResponse> LoginUserAsync(LoginModel model)
 		{
 			var user = await _userManager.FindByEmailAsync(model.Email);
 			if (user == null)
@@ -877,26 +880,40 @@ namespace IdealTrip.Services
 
 			if (!await _userManager.IsEmailConfirmedAsync(user))
 				return new UserManagerResponse { IsSuccess = false, Messege = "Email not confirmed." };
+
 			if (user.Status == ProofStatus.Pending)
 				return new UserManagerResponse { IsSuccess = false, Messege = "Your Info has been sent to Admin.. After the approval you will get an email.. Then You can login!" };
+
 			if (!await _userManager.CheckPasswordAsync(user, model.Password))
 				return new UserManagerResponse { IsSuccess = false, Messege = "Invalid password." };
 
-
+			// Generate JWT token
 			var token = _JwtHelper.GenerateToken(user.Id.ToString(), model.Email, user.Role);
+			var jwt = new JwtSecurityTokenHandler().WriteToken(token);
 
+			// Set token as HttpOnly cookie
+			_httpContextAccessor.HttpContext?.Response.Cookies.Append("authToken", jwt, new CookieOptions
+			{
+				HttpOnly = true,
+				Secure = false, // Set to false in development if needed
+				SameSite = SameSiteMode.Lax,
+				Expires = DateTime.Now.AddHours(1)
+			});
+
+			// Return user data (do NOT return token in body)
 			return new UserManagerResponse
 			{
 				IsSuccess = true,
-				Messege = new JwtSecurityTokenHandler().WriteToken(token),
-				Data =
-				new {
+				Messege = "Login successful.",
+				Data = new
+				{
 					userId = user.Id,
 					role = user.Role,
-					email = user.Email,
+					email = user.Email
 				}
 			};
 		}
+
 
 
 		#endregion

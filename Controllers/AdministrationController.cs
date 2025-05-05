@@ -181,7 +181,7 @@ namespace IdealTrip.Controllers
 		[HttpGet("get-users")]
 		public async Task<ActionResult<DataSendingResponse>> GetAllUsers()
 		{
-			var users = await _userManager.Users.Where(u => u.Role != "Admin" && u.Status == ProofStatus.Verified).Select(user =>
+			var users = await _userManager.Users.Where(u => u.Role != "Admin" && u.Status == ProofStatus.Verified && !u.IsDeleted).Select(user =>
 				new AllUsersAdminViewDto
 				{
 					UserId = user.Id,
@@ -270,7 +270,7 @@ namespace IdealTrip.Controllers
 		[HttpGet("get-tourists")]
 		public async Task<ActionResult<DataSendingResponse>> GetTourists()
 		{
-			var tourists = await _userManager.Users.Where(u => u.Role == "Tourist").Select(user =>
+			var tourists = await _userManager.Users.Where(u => u.Role == "Tourist" && !u.IsDeleted).Select(user =>
 				new AllUsersAdminViewDto
 				{
 					UserId = user.Id,
@@ -304,7 +304,7 @@ namespace IdealTrip.Controllers
 			var sixtyDaysAgo = DateTime.Now.AddDays(-60);
 
 			var currentStats = await _userManager.Users
-				.Where(u => u.CreatedAt >= thirtyDaysAgo && u.Role != "Admin" && u.Status == ProofStatus.Verified)
+				.Where(u => u.CreatedAt >= thirtyDaysAgo && u.Role != "Admin" && u.Status == ProofStatus.Verified && !u.IsDeleted)
 				.GroupBy(u => u.Role)
 				.Select(g => new
 				{
@@ -367,7 +367,7 @@ namespace IdealTrip.Controllers
 			// Previous stats (e.g., users added until a year ago)
 			var oneYearAgo = DateTime.Now.AddYears(-1);
 			var previousStats = await _userManager.Users
-				.Where(u => u.CreatedAt <= oneYearAgo && u.Role != "Admin" && u.Status == ProofStatus.Verified)
+				.Where(u => u.CreatedAt <= oneYearAgo && u.Role != "Admin" && u.Status == ProofStatus.Verified && !u.IsDeleted)
 				.GroupBy(u => u.Role)
 				.Select(g => new
 				{

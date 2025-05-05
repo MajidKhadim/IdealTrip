@@ -1,4 +1,4 @@
-using IdealTrip.Helpers;
+﻿using IdealTrip.Helpers;
 using IdealTrip.Models;
 using IdealTrip.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -46,6 +46,7 @@ builder.Services.AddAuthentication(options =>
 		IssuerSigningKey = new SymmetricSecurityKey(key),
 		RoleClaimType = ClaimTypes.Role
 	};
+
 	options.Events = new JwtBearerEvents
 	{
 		OnAuthenticationFailed = context =>
@@ -53,6 +54,16 @@ builder.Services.AddAuthentication(options =>
 			if (context.Exception is SecurityTokenExpiredException)
 			{
 				context.Response.Headers.Add("Token-Expired", "true");
+			}
+			return Task.CompletedTask;
+		},
+		OnMessageReceived = context =>
+		{
+			// 👇 Read token from 'authToken' cookie
+			var tokenFromCookie = context.HttpContext.Request.Cookies["authToken"];
+			if (!string.IsNullOrEmpty(tokenFromCookie))
+			{
+				context.Token = tokenFromCookie;
 			}
 			return Task.CompletedTask;
 		}
@@ -65,31 +76,6 @@ builder.Services.AddSwaggerGen(options =>
 		Title = "IdealTrip API",
 		Version = "v1",
 		Description = "API documentation for the IdealTrip project",
-	});
-
-	// Add JWT Authentication to Swagger
-	options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-	{
-		Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer YOUR_TOKEN_HERE\"",
-		Name = "Authorization",
-		In = ParameterLocation.Header,
-		Type = SecuritySchemeType.Http,
-		Scheme = "Bearer"
-	});
-
-	options.AddSecurityRequirement(new OpenApiSecurityRequirement
-	{
-		{
-			new OpenApiSecurityScheme
-			{
-				Reference = new OpenApiReference
-				{
-					Type = ReferenceType.SecurityScheme,
-					Id = "Bearer"
-				}
-			},
-			new List<string>()
-		}
 	});
 });
 
