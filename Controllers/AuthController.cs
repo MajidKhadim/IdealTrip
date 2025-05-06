@@ -500,6 +500,19 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
+		[HttpPost("logout")]
+		public async Task<IActionResult> LogOut()
+		{
+			try
+			{
+				_contextAccessor.HttpContext?.Response.Cookies.Delete("authToken");
+				return Ok();
+			}
+			catch(Exception e)
+			{
+				return StatusCode(500, "Internal Server Error");
+			}
+		}
 	#endregion
 	#region Password Management
 	[HttpPost("forgot-password")]

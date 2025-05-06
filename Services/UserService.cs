@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using IdealTrip.Models.TourGuide_Booking;
 using Microsoft.EntityFrameworkCore;
 using Stripe.Terminal;
+using Stripe;
 
 namespace IdealTrip.Services
 {
@@ -892,13 +893,17 @@ namespace IdealTrip.Services
 			var jwt = new JwtSecurityTokenHandler().WriteToken(token);
 
 			// Set token as HttpOnly cookie
+			// Clear all old role-based cookies
+			_httpContextAccessor.HttpContext?.Response.Cookies.Delete("authToken");
+			// Set a universal token (optional: you can still customize per role if needed)
 			_httpContextAccessor.HttpContext?.Response.Cookies.Append("authToken", jwt, new CookieOptions
 			{
 				HttpOnly = true,
-				Secure = false, // Set to false in development if needed
-				SameSite = SameSiteMode.Lax,
+				Secure = true, // Required for SameSite=None to work in Chrome
+				SameSite = SameSiteMode.None,
 				Expires = DateTime.Now.AddHours(1)
 			});
+
 
 			// Return user data (do NOT return token in body)
 			return new UserManagerResponse

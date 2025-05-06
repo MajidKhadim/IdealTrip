@@ -822,8 +822,8 @@ namespace IdealTrip.Controllers
 				});
 			}
 		}
-		[HttpGet("/rooms")]
 		[AllowAnonymous]
+		[HttpGet("/rooms")]
 		public async Task<IActionResult> GetRoomsWithFilters(
 	Guid? hotelId,
 	RoomType? roomType,
