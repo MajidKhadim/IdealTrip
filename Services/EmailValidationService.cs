@@ -11,7 +11,7 @@ namespace IdealTrip.Services
 		public EmailValidationService(IConfiguration config)
 		{
 			_httpClient = new HttpClient();
-			_kickboxApiKey = config["Kickbox:ApiKey"]; // Add this in appsettings.json
+			_kickboxApiKey = Environment.GetEnvironmentVariable("KickBoxApiKey"); // Add this in appsettings.json
 		}
 
 		public async Task<bool> IsEmailRealAsync(string email)

@@ -14,14 +14,18 @@ using Microsoft.Extensions.Configuration;
 using System.Net.NetworkInformation;
 using Stripe;
 using Microsoft.OpenApi.Models;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
 
 
-DotNetEnv.Env.Load();
+Env.Load();
+builder.Logging.AddConsole();
+builder.Configuration.AddEnvironmentVariables();
+Console.WriteLine($"{Environment.GetEnvironmentVariable("ENV_JWT_SECRET_KEY")}");
 // JWT Configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
+var key = Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("ENV_JWT_SECRET_KEY"));
 builder.Services.AddSingleton<EmailValidationService>();
 builder.Services.AddSingleton<JwtHelper>();
 builder.Services.AddSingleton<EmailService>();
@@ -82,8 +86,6 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddAuthorization();
 // Add services to the container.
 builder.Services.AddControllers();
-builder.Logging.AddConsole();
-builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddCors(options =>
 {
 	options.AddPolicy("AllowMultipleOrigins", builder =>
@@ -105,13 +107,11 @@ builder.Services.AddCors(options =>
 });
 
 
-
-var stripeConfig = builder.Configuration.GetSection("Stripe");
-StripeConfiguration.ApiKey = stripeConfig["SecretKey"];
-string azureBlobStorageConnectionString = builder.Configuration["AzureBlobStorage:ConnectionString"];
+StripeConfiguration.ApiKey = Environment.GetEnvironmentVariable("SecretKey");
+//string azureBlobStorageConnectionString = builder.Configuration["AzureBlobStorage:ConnectionString"];
 
 // Register the BlobServiceClient with the connection string
-builder.Services.AddSingleton(x => new BlobServiceClient(azureBlobStorageConnectionString));
+//builder.Services.AddSingleton(x => new BlobServiceClient(azureBlobStorageConnectionString));
 builder.Services.AddSignalR();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -119,7 +119,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-	options.UseSqlServer(builder.Configuration["ENV_IDEALTRIPDBCONNECTION"]);
+	options.UseSqlServer(Environment.GetEnvironmentVariable("ENV_IDEALTRIPDBCONNECTION"));
 });
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>

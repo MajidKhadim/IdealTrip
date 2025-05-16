@@ -13,7 +13,7 @@ namespace IdealTrip.Services
 
 		public PaymentService(IConfiguration configuration)
 		{
-			_secretKey = configuration["Stripe:SecretKey"];
+			string _secretKey = Environment.GetEnvironmentVariable("SecretKey");
 			StripeConfiguration.ApiKey = _secretKey;
 		}
 

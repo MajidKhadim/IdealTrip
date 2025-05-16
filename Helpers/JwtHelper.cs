@@ -19,7 +19,7 @@ namespace IdealTrip.Helpers
 		public JwtSecurityToken? GenerateToken(string userId, string email, string role)
 		{
 			var jwtSettings = _configuration.GetSection("Jwt");
-			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["ENV_JWT_SECRET_KEY"]));
+			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("ENV_JWT_SECRET_KEY")));
 			var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
 			var claims = new[]

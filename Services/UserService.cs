@@ -1,6 +1,6 @@
-﻿using Azure.Core;
-using Azure.Storage.Blobs.Models;
-using Azure.Storage.Blobs;
+﻿//using Azure.Core;
+//using Azure.Storage.Blobs.Models;
+//using Azure.Storage.Blobs;
 using IdealTrip.Helpers;
 using IdealTrip.Models;
 using IdealTrip.Models.Enums;
@@ -52,7 +52,7 @@ namespace IdealTrip.Services
 		private readonly IConfiguration _config;
 		private readonly ILogger<UserService> _logger;
 		public readonly JwtHelper _JwtHelper;
-		private readonly BlobServiceClient _blobServiceClient;
+		//private readonly BlobServiceClient _blobServiceClient;
 		private readonly string _profilePhotoContainerName = "profilepictures";
 		private readonly string _proofContainerName = "proofs";
 		private readonly IHttpContextAccessor _httpContextAccessor;
@@ -64,7 +64,6 @@ namespace IdealTrip.Services
 			IConfiguration config,
 			ILogger<UserService> logger,
 			JwtHelper jwtHelper,
-			BlobServiceClient blobServiceClient,
 			IHttpContextAccessor httpContextAccessor)
 		{
 			_userManager = userManager;
@@ -73,7 +72,6 @@ namespace IdealTrip.Services
 			_config = config;
 			_logger = logger;
 			_JwtHelper = jwtHelper;
-			_blobServiceClient = blobServiceClient;
 			_httpContextAccessor = httpContextAccessor;
 		}
 

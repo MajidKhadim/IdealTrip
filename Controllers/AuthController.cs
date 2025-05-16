@@ -104,7 +104,7 @@ namespace IdealTrip.Controllers
 			}
 			catch (Exception ex)
 			{
-				
+				await _userService.DeleteUser(model.Email);
 				return StatusCode(500, new UserManagerResponse
 				{
 					Messege = "Unable to perform the task now. Please try again later.",
@@ -183,6 +183,7 @@ namespace IdealTrip.Controllers
 			}
 			catch (Exception ex)
 			{
+				await _userService.DeleteUser(model.Email);
 				return StatusCode(500, new UserManagerResponse
 				{
 					Messege = "Unable to perform the task now. Please try again later.",
@@ -260,6 +261,7 @@ namespace IdealTrip.Controllers
 			}
 			catch (Exception ex)
 			{
+				await _userService.DeleteUser(model.Email);
 				return StatusCode(500, new UserManagerResponse
 				{
 					Messege = "Unable to perform the task now. Please try again later.",
@@ -337,6 +339,7 @@ namespace IdealTrip.Controllers
 			}
 			catch (Exception ex)
 			{
+				await _userService.DeleteUser(model.Email);
 				return StatusCode(500, new UserManagerResponse
 				{
 					Messege = "Unable to perform the task now. Please try again later.",
@@ -416,6 +419,7 @@ namespace IdealTrip.Controllers
 			}
 			catch (Exception ex)
 			{
+				await _userService.DeleteUser(model.Email);
 				return StatusCode(500, new UserManagerResponse
 				{
 					Messege = "Unable to perform the task now. Please try again later.",

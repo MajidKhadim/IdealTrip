@@ -15,7 +15,8 @@ namespace IdealTrip.Services
 		public EmailService(IConfiguration configuration)
 		{
 			var sendGridConfig = configuration.GetSection("SendGrid");
-			_apiKey = configuration["ENV_SENDGRID_API_KEY"];
+
+			 _apiKey = Environment.GetEnvironmentVariable("ENV_SENDGRID_API_KEY");
 			_senderEmail = sendGridConfig["SenderEmail"];
 			_senderName = sendGridConfig["SenderName"];
 		}
