@@ -58,7 +58,7 @@ namespace IdealTrip.Services
 			var options = new PaymentIntentCreateOptions
 			{
 				Amount = (long)(amount * 100), // Convert to cents
-				Currency = "usd",
+				Currency = "pkr",
 				PaymentMethodTypes = new List<string> { "card" },
 				Metadata = new Dictionary<string, string>
 			{
