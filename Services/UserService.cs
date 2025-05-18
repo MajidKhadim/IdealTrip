@@ -86,12 +86,19 @@ namespace IdealTrip.Services
 				var existingUser = await _userManager.FindByEmailAsync(model.Email);
 				if (existingUser != null)
 				{
-					return new UserManagerResponse
+					if (!existingUser.EmailConfirmed)
 					{
-						IsSuccess = false,
-						Messege = "This Email is already associated with another Account",
-						Errors = new List<string> { "This Email is already associated with another Account" }
-					};
+						return new UserManagerResponse { IsSuccess = true, Messege = "User registered successfully." };
+					}
+					else
+					{
+						return new UserManagerResponse
+						{
+							IsSuccess = false,
+							Messege = "This Email is already associated with another Account",
+							Errors = new List<string> { "This Email is already associated with another Account" }
+						};
+					}
 				}
 
 				if (model.Password != model.ConfirmPassword)
@@ -173,12 +180,19 @@ namespace IdealTrip.Services
 				var existingUser = await _userManager.FindByEmailAsync(model.Email);
 				if (existingUser != null)
 				{
-					return new UserManagerResponse
+					if (!existingUser.EmailConfirmed)
 					{
-						IsSuccess = false,
-						Messege = "This Email is already associated with another Account",
-						Errors = new List<string> { "This Email is already associated with another Account" }
-					};
+						return new UserManagerResponse { IsSuccess = true, Messege = "User registered successfully." };
+					}
+					else
+					{
+						return new UserManagerResponse
+						{
+							IsSuccess = false,
+							Messege = "This Email is already associated with another Account",
+							Errors = new List<string> { "This Email is already associated with another Account" }
+						};
+					}
 				}
 
 				if (model.Password != model.ConfirmPassword)
@@ -299,12 +313,19 @@ namespace IdealTrip.Services
 				var existingUser = await _userManager.FindByEmailAsync(model.Email);
 				if (existingUser != null)
 				{
-					return new UserManagerResponse
+					if (!existingUser.EmailConfirmed)
 					{
-						IsSuccess = false,
-						Messege = "This Email is already associated with another Account",
-						Errors = new List<string> { "This Email is already associated with another Account" }
-					};
+						return new UserManagerResponse { IsSuccess = true, Messege = "User registered successfully." };
+					}
+					else
+					{
+						return new UserManagerResponse
+						{
+							IsSuccess = false,
+							Messege = "This Email is already associated with another Account",
+							Errors = new List<string> { "This Email is already associated with another Account" }
+						};
+					}
 				}
 
 				if (model.Password != model.ConfirmPassword)
@@ -529,12 +550,19 @@ namespace IdealTrip.Services
 				var existingUser = await _userManager.FindByEmailAsync(model.Email);
 				if (existingUser != null)
 				{
-					return new UserManagerResponse
+					if (!existingUser.EmailConfirmed)
 					{
-						IsSuccess = false,
-						Messege = "This Email is already associated with another Account",
-						Errors = new List<string> { "This Email is already associated with another Account" }
-					};
+						return new UserManagerResponse { IsSuccess = true, Messege = "User registered successfully." };
+					}
+					else
+					{
+						return new UserManagerResponse
+						{
+							IsSuccess = false,
+							Messege = "This Email is already associated with another Account",
+							Errors = new List<string> { "This Email is already associated with another Account" }
+						};
+					}
 				}
 
 				// Confirm password validation
@@ -654,12 +682,19 @@ namespace IdealTrip.Services
 				var existingUser = await _userManager.FindByEmailAsync(model.Email);
 				if (existingUser != null)
 				{
-					return new UserManagerResponse
+					if (!existingUser.EmailConfirmed)
 					{
-						IsSuccess = false,
-						Messege = "This Email is already associated with another Account",
-						Errors = new List<string> { "This Email is already associated with another Account" }
-					};
+						return new UserManagerResponse { IsSuccess = true, Messege = "User registered successfully." };
+					}
+					else
+					{
+						return new UserManagerResponse
+						{
+							IsSuccess = false,
+							Messege = "This Email is already associated with another Account",
+							Errors = new List<string> { "This Email is already associated with another Account" }
+						};
+					}
 				}
 
 				if (model.Password != model.ConfirmPassword)

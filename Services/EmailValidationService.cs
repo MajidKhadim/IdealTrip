@@ -24,7 +24,7 @@ namespace IdealTrip.Services
 			var content = await response.Content.ReadAsStringAsync();
 			var result = JsonConvert.DeserializeObject<KickboxResponse>(content);
 
-			return result.result == "deliverable";
+			return (result.result == "deliverable");
 		}
 	}
 
