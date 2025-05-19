@@ -379,6 +379,8 @@ namespace IdealTrip.Controllers
 						t.Name,
 						t.Type,
 						t.StartLocation,
+						t.SeatsAvailable,
+						t.Capacity,
 						t.Destination,
 						t.DepartureTime,
 						t.TicketPrice,
