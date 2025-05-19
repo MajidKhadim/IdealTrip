@@ -895,13 +895,13 @@ namespace IdealTrip.Controllers
 		}
 
 
-		[HttpGet("get-feedback/{tranportId}")]
-		public async Task<IActionResult> GetHotelFeedbacks(Guid transportId)
+		[HttpGet("get-feedback/{transportId}")]
+		public async Task<IActionResult> GetHotelFeedbacks(string transportId)
 		{
 			try
 			{
 				var feedbacks = await _context.FeedBacks
-					.Where(f => f.ServiceId == transportId && f.ServiceType == Service.Transport.ToString())
+					.Where(f => f.ServiceId == Guid.Parse(transportId) && f.ServiceType == Service.Transport.ToString())
 					.OrderByDescending(f => f.Date)
 					.Select(f => new
 					{
