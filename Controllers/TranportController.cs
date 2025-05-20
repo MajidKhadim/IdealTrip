@@ -384,6 +384,14 @@ namespace IdealTrip.Controllers
 						t.Destination,
 						t.DepartureTime,
 						t.TicketPrice,
+						PrimaryImage = _context.ServiceImages
+							.Where(si => si.ServiceId == t.Id && si.ServiceType == Service.Transport.ToString() && si.IsPrimary)
+							.Select(si => si.ImageUrl)
+							.FirstOrDefault(),
+						Images = _context.ServiceImages
+							.Where(si => si.ServiceId == t.Id && si.ServiceType == Service.Transport.ToString() && !si.IsPrimary)
+							.Select(si => new { si.ImageUrl })
+							.ToList()
 					}
 					).ToListAsync();
 				return Ok(new UserManagerResponse
@@ -425,7 +433,7 @@ namespace IdealTrip.Controllers
 						t.IsAvailable,
 						t.CreatedAt,
 						t.OwnerId,
-						OwnerName = t.Owner.UserName, // Assuming ApplicationUser has UserName
+						OwnerName = t.Owner.UserName,
 						Images = _context.ServiceImages
 							.Where(si => si.ServiceId == t.Id && si.ServiceType == Service.Transport.ToString())
 							.Select(si => new { si.ImageUrl, si.IsPrimary })
