@@ -29,7 +29,7 @@ namespace IdealTrip.Services
 						PriceData = new SessionLineItemPriceDataOptions
 						{
 							Currency = currency,
-							UnitAmount = (long)(amount), // Convert to cents
+							UnitAmount = (long)(amount), 
                             ProductData = new SessionLineItemPriceDataProductDataOptions
 							{
 								Name = productName
@@ -39,14 +39,14 @@ namespace IdealTrip.Services
 					}
 				},
 				Mode = "payment",
-				SuccessUrl = $"{successUrl}?bookingId={bookingId}", // Include product ID for reference
+				SuccessUrl = $"{successUrl}?bookingId={bookingId}", 
 				CancelUrl = cancelUrl
 			};
 
 			var service = new SessionService();
 			Session session = await service.CreateAsync(options);
 
-			return session.Url; // Returns the Stripe Checkout URL
+			return session.Url; 
 		}
 		public  async Task<object> CreatePaymentIntent(Guid bookingId,string productType,decimal amount)
 		{
@@ -57,7 +57,7 @@ namespace IdealTrip.Services
 
 			var options = new PaymentIntentCreateOptions
 			{
-				Amount = (long)(amount * 100), // Convert to cents
+				Amount = (long)(amount * 100), 
 				Currency = "pkr",
 				PaymentMethodTypes = new List<string> { "card" },
 				Metadata = new Dictionary<string, string>

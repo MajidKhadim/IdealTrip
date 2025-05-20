@@ -243,7 +243,6 @@ namespace IdealTrip.Services
 					await _userManager.UpdateAsync(user);
 				}
 
-				// Save Property Ownership document
 				if (model.PropertyOwnerShipDoc != null)
 				{
 					var propertyRegSaveResult = await SaveFileWithValidation(user.Id, "proofs", model.PropertyOwnerShipDoc);

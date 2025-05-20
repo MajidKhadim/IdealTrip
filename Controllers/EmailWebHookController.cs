@@ -20,38 +20,29 @@ namespace IdealTrip.Controllers
 		[HttpPost("bounce")]
 		public async Task<IActionResult> HandleBounce()
 		{
-			// Read the raw request body as a string
 			using (var reader = new StreamReader(Request.Body))
 			{
 				var requestBody = await reader.ReadToEndAsync();
 
-				// Log the raw request body for debugging
 				_logger.LogInformation("Received request body: {RequestBody}", requestBody);
 
-				// Deserialize the request body into a list of BounceEvent objects
 				var bounceEvents = JsonConvert.DeserializeObject<List<BounceEvent>>(requestBody);
 
-				// Check if there are bounce events to process
 				if (bounceEvents == null || !bounceEvents.Any())
 				{
 					return BadRequest("No bounce events found.");
 				}
 
-				// Process each bounce event
 				foreach (var bounceEvent in bounceEvents)
 				{
 					if (bounceEvent.Event == "bounce" || bounceEvent.Event == "dropped")
 					{
-						// Log the bounce event for debugging
 						_logger.LogInformation("Processing bounce event for email: {Email}", bounceEvent.Email);
 
-						// Save the bounce event to the database (implement SaveBounceAsync)
 						await SaveBounceAsync(bounceEvent);
 					}
 				}
 			}
-
-			// Return a generic response after processing the bounce events
 			return Ok();
 		}
 

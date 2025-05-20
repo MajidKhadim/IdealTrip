@@ -23,7 +23,6 @@ Env.Load();
 builder.Logging.AddConsole();
 builder.Configuration.AddEnvironmentVariables();
 Console.WriteLine($"{Environment.GetEnvironmentVariable("ENV_JWT_SECRET_KEY")}");
-// JWT Configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("ENV_JWT_SECRET_KEY"));
 builder.Services.AddSingleton<EmailValidationService>();
@@ -63,7 +62,6 @@ builder.Services.AddAuthentication(options =>
 		},
 		OnMessageReceived = context =>
 		{
-			// 👇 Read token from 'authToken' cookie
 			var tokenFromCookie = context.HttpContext.Request.Cookies["authToken"];
 			if (!string.IsNullOrEmpty(tokenFromCookie))
 			{
@@ -84,7 +82,6 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddAuthorization();
-// Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddCors(options =>
 {
@@ -102,7 +99,7 @@ builder.Services.AddCors(options =>
 			)
 			.AllowAnyHeader()
 			.AllowAnyMethod()
-			.AllowCredentials() // ? Important for WebSockets
+			.AllowCredentials() 
 	);
 });
 
@@ -137,7 +134,6 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 var app = builder.Build();
 
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
 	app.UseSwagger();
